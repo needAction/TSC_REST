@@ -4,6 +4,8 @@ export type SessionPhase = "Waiting" | "Loading" | "Playing";
 export interface Player {
   id: string;
   role: PlayerRole;
+  // 플레이용 씬 로딩 완료 여부입니다.
+  ready: boolean;
 }
 
 export interface SessionDefinition {
@@ -12,14 +14,13 @@ export interface SessionDefinition {
 }
 
 export interface SessionSnapshot {
-  id: string;
+  sessionId: string;
   phase: SessionPhase;
-  players: (Player & { ready: boolean })[];
+  players: Player[];
 }
 
 export class GameSession {
   private readonly players: Player[] = [];
-  private readonly readyPlayerIds = new Set<string>();
 
   constructor(private readonly definition: SessionDefinition) {}
 
@@ -28,33 +29,13 @@ export class GameSession {
   }
 
   get phase(): SessionPhase {
-    if (this.players.length !== this.definition.roles.length) {
+    if (this.players.length < this.definition.roles.length) {
       return "Waiting";
     }
 
-    return this.players.every(player => this.readyPlayerIds.has(player.id))
+    return this.players.every(player => player.ready)
       ? "Playing"
       : "Loading";
-  }
-
-  markReady(playerId: string): boolean {
-    if (!this.players.some(player => player.id === playerId)) {
-      return false;
-    }
-
-    this.readyPlayerIds.add(playerId);
-    return true;
-  }
-
-  getSnapshot(): SessionSnapshot {
-    return {
-      id: this.id,
-      phase: this.phase,
-      players: this.players.map(player => ({
-        ...player,
-        ready: this.readyPlayerIds.has(player.id)
-      }))
-    };
   }
 
   addPlayer(playerId: string): Player | undefined {
@@ -64,9 +45,32 @@ export class GameSession {
       return undefined;
     }
 
-    const player: Player = { id: playerId, role };
-    this.players.push(player);
+    const player: Player = {
+      id: playerId,
+      role,
+      ready: false
+    };
 
+    this.players.push(player);
     return { ...player };
+  }
+
+  markSceneLoaded(playerId: string): boolean {
+    const player = this.players.find(player => player.id === playerId);
+
+    if (player === undefined) {
+      return false;
+    }
+
+    player.ready = true;
+    return true;
+  }
+
+  getSnapshot(): SessionSnapshot {
+    return {
+      sessionId: this.id,
+      phase: this.phase,
+      players: this.players.map(player => ({ ...player }))
+    };
   }
 }

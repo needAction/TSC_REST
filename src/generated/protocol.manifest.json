@@ -1,0 +1,15 @@
+{
+  "owner": "escape-protocol-tool",
+  "target": "server",
+  "contractHash": "12820fc305c8167c749be5f67736dd8c39b8a7bbcff41d0e0405d6e5bdd88b45",
+  "fingerprint": "4b68f868c948e105de18380fbfe18b42a7a4dcd307c6507e50056359c396f04d",
+  "tools": {
+    "tsProto": "2.15.0",
+    "grpcTools": "2.76.0",
+    "csharpRuntime": "3.33.0"
+  },
+  "files": {
+    "escape/v1/common.ts": "b9ebdf1110e119e434f04fd3c1e85eb0a106f33f7596224a2937ec032a0d21ad",
+    "escape/v1/session.ts": "81e78d51b2447062ac98905834a55110084c3fddccc9fc12b3240e9fc5c9f1e9"
+  }
+}

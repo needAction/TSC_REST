@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package escape.v1;
+option csharp_namespace = "EscapeGame.Protocol.V1";
+
+enum SessionErrorCode {
+  SESSION_ERROR_CODE_UNSPECIFIED = 0;
+  SESSION_FULL = 1;
+  SESSION_NOT_FOUND = 2;
+  INVALID_PARTICIPANT = 3;
+  PARTICIPANT_TOKEN_REQUIRED = 4;
+}
+
+message SessionFailure {
+  SessionErrorCode code = 1;
+}

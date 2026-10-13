@@ -2,8 +2,9 @@ import { createServer } from "node:http";
 import { GameSession } from "./models/GameSession";
 import { SessionService } from "./services/SessionService";
 import { SessionController } from "./controllers/SessionController";
+import { loadServerConfig } from "./config/ServerConfig";
 
-const port = 3000;
+const config = loadServerConfig(process.env);
 
 // 초기 조립: 나중에 Bootstrapper로 분리합니다.
 const session = new GameSession({
@@ -28,21 +29,24 @@ const server = createServer((request, response) => {
     return;
   }
 
-  const pathname = new URL(
-  request.url ?? "/",
-  "http://localhost"
-).pathname;
-
-const readyRoute = /^\/sessions\/([^/]+)\/ready$/.exec(pathname);
-
-if (request.method === "POST" && readyRoute !== null) {
-  const sessionId = readyRoute[1];
-
-  if (sessionId !== undefined) {
-    sessionController.ready(request, response, sessionId);
-    return;
+  const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+  const queryRoute = /^\/sessions\/([^/]+)$/.exec(pathname);
+  if (request.method === "GET" && queryRoute !== null) {
+    const sessionId = queryRoute[1];
+    if (sessionId !== undefined) {
+      sessionController.query(request, response, sessionId);
+      return;
+    }
   }
-}
+
+  const readyRoute = /^\/sessions\/([^/]+)\/ready$/.exec(pathname);
+  if (request.method === "POST" && readyRoute !== null) {
+    const sessionId = readyRoute[1];
+    if (sessionId !== undefined) {
+      sessionController.ready(request, response, sessionId);
+      return;
+    }
+  }
 
   response.writeHead(404);
   response.end(JSON.stringify({
@@ -50,6 +54,6 @@ if (request.method === "POST" && readyRoute !== null) {
   }));
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`서버 실행: http://127.0.0.1:${port}`);
+server.listen(config.port, config.host, () => {
+  console.log(`서버 수신 주소: ${config.host}, 포트: ${config.port}`);
 });

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package escape.v1;
+option csharp_namespace = "EscapeGame.Protocol.V1";
+
+import "escape/v1/common.proto";
+
+enum SessionPhase {
+  SESSION_PHASE_UNSPECIFIED = 0;
+  WAITING = 1;
+  LOADING = 2;
+  PLAYING = 3;
+}
+
+enum PlayerRole {
+  PLAYER_ROLE_UNSPECIFIED = 0;
+  ROLE_A = 1;
+  ROLE_B = 2;
+}
+
+message PlayerSnapshot {
+  string player_id = 1;
+  PlayerRole role = 2;
+  bool scene_loaded = 3;
+}
+
+message SessionSnapshot {
+  string session_id = 1;
+  SessionPhase phase = 2;
+  repeated PlayerSnapshot players = 3;
+}
+
+message QuerySessionResponse {
+  oneof outcome {
+    SessionSnapshot snapshot = 1;
+    SessionFailure failure = 2;
+  }
+}
