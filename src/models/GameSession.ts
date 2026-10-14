@@ -22,7 +22,7 @@ export interface SessionSnapshot {
 export class GameSession {
   private readonly players: Player[] = [];
 
-  constructor(private readonly definition: SessionDefinition) {}
+  constructor(private readonly definition: SessionDefinition) { }
 
   get id(): string {
     return this.definition.id;
@@ -39,7 +39,7 @@ export class GameSession {
   }
 
   addPlayer(playerId: string): Player | undefined {
-    const role = this.definition.roles[this.players.length];
+    const role = this.definition.roles.find(role => !this.players.some(player => player.role === role));
 
     if (role === undefined) {
       return undefined;
@@ -53,6 +53,18 @@ export class GameSession {
 
     this.players.push(player);
     return { ...player };
+  }
+  removePlayer(playerId: string): boolean {
+    const index = this.players.findIndex(
+      player => player.id === playerId
+    );
+
+    if (index === -1) {
+      return false;
+    }
+
+    this.players.splice(index, 1);
+    return true;
   }
 
   markSceneLoaded(playerId: string): boolean {

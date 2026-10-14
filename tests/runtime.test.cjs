@@ -78,3 +78,42 @@ test("빌드 실패 시 이전 dist 서버를 실행하지 않고 실패 코드�
     rmdirSync(root);
   }
 });
+
+test("퇴장한 역할을 재배정하고 준비 상태에 따라 단계를 변경한다", () => {
+  for (const removedRole of ["A", "B"]) {
+    const session = new GameSession({
+      id: "test",
+      roles: ["A", "B"]
+    });
+
+    const a = session.addPlayer("player-a");
+    const b = session.addPlayer("player-b");
+
+    session.markSceneLoaded(a.id);
+    session.markSceneLoaded(b.id);
+    assert.equal(session.phase, "Playing");
+
+    const removed = removedRole === "A" ? a : b;
+    const remaining = removedRole === "A" ? b : a;
+
+    assert.equal(session.removePlayer(removed.id), true);
+    assert.equal(session.removePlayer(removed.id), false);
+    assert.equal(session.phase, "Waiting");
+
+    assert.deepEqual(
+      session.getSnapshot().players,
+      [{ ...remaining, ready: true }]
+    );
+    assert.equal(session.markSceneLoaded(removed.id), false);
+
+    const replacement = session.addPlayer("player-new");
+
+    assert.equal(replacement.role, removedRole);
+    assert.equal(replacement.ready, false);
+    assert.equal(session.phase, "Loading");
+    assert.equal(session.addPlayer("player-extra"), undefined);
+
+    session.markSceneLoaded(replacement.id);
+    assert.equal(session.phase, "Playing");
+  }
+});
