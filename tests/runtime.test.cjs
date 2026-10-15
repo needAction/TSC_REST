@@ -7,17 +7,27 @@ const path = require("node:path");
 const { loadEnvironment } = require("../scripts/run.cjs");
 const { loadServerConfig } = require("../dist/config/ServerConfig");
 const { GameSession } = require("../dist/models/GameSession");
-const { SessionService } = require("../dist/services/SessionService");
+const {
+  createSessionService
+} = require("./helpers/createSessionService.cjs");
 
 test("환경 파일 분리와 외부 환경변수 우선순위", () => {
   const root = mkdtempSync(path.join(tmpdir(), "escape-env-test-"));
   const local = path.join(root, ".env.local");
   const shared = path.join(root, ".env.test");
   try {
-    writeFileSync(local, 'HOST="127.0.0.1"\nPORT=3000 # local\n');
+    writeFileSync(local, 'HOST="127.0.0.1"\nPORT=3000 # local\nPARTICIPANT_TIMEOUT_MS=12000\nEXPIRATION_CHECK_INTERVAL_MS=250\n');
     writeFileSync(shared, 'HOST=0.0.0.0\nPORT=3001\n');
-    assert.deepEqual(loadServerConfig(loadEnvironment("local", {}, root)), { host: "127.0.0.1", port: 3000 });
-    assert.deepEqual(loadServerConfig(loadEnvironment("test", {}, root)), { host: "0.0.0.0", port: 3001 });
+    assert.deepEqual(loadServerConfig(loadEnvironment("local", {}, root)), {
+      host: "127.0.0.1", port: 3000,
+      participantTimeoutMs: 12000, expirationCheckIntervalMs: 250
+    });
+    assert.deepEqual(loadServerConfig(loadEnvironment("test", {}, root)), {
+      host: "0.0.0.0", port: 3001,
+      participantTimeoutMs: 10000, expirationCheckIntervalMs: 500
+    });
+    assert.equal(loadServerConfig(loadEnvironment("local", { PARTICIPANT_TIMEOUT_MS: "15000" }, root)).participantTimeoutMs, 15000);
+    assert.equal(loadServerConfig(loadEnvironment("local", { EXPIRATION_CHECK_INTERVAL_MS: "1000" }, root)).expirationCheckIntervalMs, 1000);
     assert.equal(loadServerConfig(loadEnvironment("test", { PORT: "8080" }, root)).port, 8080);
     assert.throws(() => loadServerConfig(loadEnvironment("test", { PORT: "bad" }, root)));
     assert.throws(() => loadEnvironment("production", {}, root));
@@ -36,7 +46,7 @@ test("환경 파일 분리와 외부 환경변수 우선순위", () => {
 
 test("씬 로딩 완료 보고는 정원 충족 후 Playing으로 전환한다", () => {
   const session = new GameSession({ id: "test", roles: ["A", "B"] });
-  const service = new SessionService(session);
+  const service = createSessionService(session);
   const a = service.join();
   assert.equal(service.ready("test", a.participantToken).snapshot.phase, "Waiting");
   const b = service.join();

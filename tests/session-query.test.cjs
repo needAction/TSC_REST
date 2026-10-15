@@ -1,12 +1,11 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const { GameSession } = require("../dist/models/GameSession");
-const { SessionService } = require("../dist/services/SessionService");
+const { createSessionService } = require("./helpers/createSessionService.cjs");
 const { SessionController } = require("../dist/controllers/SessionController");
-
 test("조회는 참가자만 허용하며 로딩 상태와 토큰을 변경하지 않는다", () => {
   const session = new GameSession({ id: "test", roles: ["A", "B"] });
-  const service = new SessionService(session);
+  const service = createSessionService(session);
   const a = service.join();
   const b = service.join();
   assert.equal(service.query("missing", a.participantToken).code, "SESSION_NOT_FOUND");
@@ -27,7 +26,8 @@ test("조회는 참가자만 허용하며 로딩 상태와 토큰을 변경하�
 });
 
 test("조회 Controller는 오류 상태와 캐시 금지 헤더를 반환한다", () => {
-  const controller = new SessionController(new SessionService(new GameSession({ id: "test", roles: ["A", "B"] })));
+  const controller = new SessionController(createSessionService(new GameSession({ id: "test", roles: ["A", "B"] })));
+  
   function query(token, sessionId = "test") {
     const response = {
       headers: {},

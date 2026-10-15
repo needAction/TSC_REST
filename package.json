@@ -12,6 +12,8 @@
     "proto:check": "node scripts/proto-tool.cjs verify",
     "run:local": "node scripts/run.cjs local",
     "run:test": "node scripts/run.cjs test",
+    "docker:local": "node scripts/deploy-docker.cjs local",
+    "docker:cloud": "node scripts/deploy-docker.cjs cloud",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "test": "npm run build && node --test tests/*.test.cjs"

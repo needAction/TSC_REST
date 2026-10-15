@@ -5,3 +5,6 @@ dist
 .env.*
 asset-inspection
 tests
+client-refactor
+docs
+.protocol-tools
