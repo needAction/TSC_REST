@@ -123,6 +123,7 @@ node_modules/
 /asset-inspection/
 /client-refactor/
 /.protocol-tools/
+/.csv-verification/
 /protocol.projects.local.json
 
 # Logs
