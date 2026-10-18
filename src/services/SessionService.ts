@@ -1,3 +1,6 @@
+import type { CsvGameData } from "../data/tables/CsvGameData";
+import { createGameDataBundle, GameDataBundle } from "../data/GameDataBundle";
+import { RoomProgression } from "../models/RoomProgression";
 import { randomUUID } from "node:crypto";
 import { GameSession } from "../models/GameSession";
 import { ParticipantRegistry } from "./ParticipantRegistry";
@@ -17,14 +20,24 @@ type ParticipantValidationResult =
   | SessionParticipantFailure;
 
 export class SessionService {
+  private readonly bundle?: GameDataBundle;
+  private readonly progression?: RoomProgression;
   constructor(
     private readonly session: GameSession,
-    private readonly participants: ParticipantRegistry
-  ) {}
+    private readonly participants: ParticipantRegistry,
+    gameData?: CsvGameData
+  ) {
+    if (gameData) {
+      this.bundle = createGameDataBundle(gameData.source);
+      this.progression = new RoomProgression(gameData);
+    }
+  }
 
   join(): JoinResult {
     // 빈자리가 없다고 판단하기 전에 만료된 자리를 정리합니다.
     this.expireParticipants();
+
+    if (this.session.getSnapshot().players.length === 0) this.progression?.reset();
 
     const player = this.session.addPlayer(randomUUID());
 
@@ -72,7 +85,7 @@ export class SessionService {
 
     return {
       success: true,
-      snapshot: this.session.getSnapshot()
+      snapshot: this.getSnapshot()
     };
   }
 
@@ -88,7 +101,7 @@ export class SessionService {
 
     return {
       success: true,
-      snapshot: this.session.getSnapshot()
+      snapshot: this.getSnapshot()
     };
   }
 
@@ -135,6 +148,27 @@ export class SessionService {
     }
 
     return removedCount;
+  }
+
+  private getSnapshot() {
+    const snapshot = this.session.getSnapshot();
+    return this.progression ? { ...snapshot, unlockedRoomIds: this.progression.unlockedRoomIds } : snapshot;
+  }
+
+  data(sessionId: string, token: string) {
+    const participant = this.validateParticipant(sessionId, token);
+    if (!participant.success) return participant;
+    if (!this.bundle) throw new Error("Game data is not initialized.");
+    return { success: true as const, ...this.bundle };
+  }
+
+  submit(sessionId: string, token: string, puzzleId: number, answers: readonly string[]) {
+    const participant = this.validateParticipant(sessionId, token);
+    if (!participant.success) return participant;
+    const player = this.session.getSnapshot().players.find(row => row.id === participant.playerId)!;
+    const result = this.session.phase === "Playing" && this.progression
+      ? this.progression.submit(player.role, puzzleId, answers) : { accepted: false, correct: false };
+    return { success: true as const, ...result, snapshot: this.getSnapshot() };
   }
 
   private validateParticipant(

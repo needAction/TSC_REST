@@ -1,0 +1,96 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1320' viewBox='0 0 1600 1320' role='img'>
+<title>두 클라이언트의 동기화와 공간 해금</title><desc>R01 기준 A는 단서, B는 해결자입니다. 판정과 누적 해금은 서버가 소유합니다.</desc><rect width='1600' height='1320' fill='white'/>
+<defs><marker id='arrow' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='9' markerHeight='9' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#506f85'/></marker></defs>
+<text x='60' y='69.8' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='32' font-weight='600' text-anchor='start'>
+<tspan x='60' y='69.8'>두 클라이언트의 동기화와 공간 해금</tspan>
+</text>
+<text x='60' y='122.5' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='20' font-weight='400' text-anchor='start'>
+<tspan x='60' y='122.5'>R01 기준 A는 단서, B는 해결자입니다. 판정과 누적 해금은 서버가 소유합니다.</tspan>
+</text>
+<rect x='60' y='160' width='390' height='95' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='255' y='196.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='255' y='196.55'>클라이언트 A</tspan>
+</text>
+<text x='255' y='234.95' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='255' y='234.95'>R01 Clue / Unity</tspan>
+</text>
+<rect x='605' y='160' width='390' height='95' rx='8' fill='#e9f5ef' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='800' y='196.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='800' y='196.55'>TSC_REST 서버</tspan>
+</text>
+<text x='800' y='234.95' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='800' y='234.95'>CSV · 세션 · 정답 · 해금</tspan>
+</text>
+<rect x='1150' y='160' width='390' height='95' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='1345' y='196.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='1345' y='196.55'>클라이언트 B</tspan>
+</text>
+<text x='1345' y='234.95' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='1345' y='234.95'>R01 Solver / Unity</tspan>
+</text>
+<line x1='255' y1='255' x2='255' y2='1155' stroke='#b3c2ce' stroke-width='1.5' stroke-dasharray='7 6'/>
+<line x1='800' y1='255' x2='800' y2='1155' stroke='#b3c2ce' stroke-width='1.5' stroke-dasharray='7 6'/>
+<line x1='1345' y1='255' x2='1345' y2='1155' stroke='#b3c2ce' stroke-width='1.5' stroke-dasharray='7 6'/>
+<polyline points='255,315 800,315' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='527.5' y='296.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='527.5' y='296.225'>① join → data → 최초 query</tspan>
+</text>
+<polyline points='800,380 255,380' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='527.5' y='361.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='527.5' y='361.225'>② CSV 23개 + 초기 해금 상태</tspan>
+</text>
+<polyline points='1345,450 800,450' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1072.5' y='431.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1072.5' y='431.225'>③ join → data → 최초 query</tspan>
+</text>
+<polyline points='800,515 1345,515' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1072.5' y='496.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1072.5' y='496.225'>④ CSV 23개 + 초기 해금 상태</tspan>
+</text>
+<polyline points='255,585 800,585' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='527.5' y='566.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='527.5' y='566.225'>⑤ 검증·주입·R01 로드 후 ready</tspan>
+</text>
+<polyline points='1345,650 800,650' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1072.5' y='631.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1072.5' y='631.225'>⑥ 검증·주입·R01 로드 후 ready</tspan>
+</text>
+<text x='800' y='707.05' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='800' y='707.05'>양쪽 ready → Playing</tspan>
+</text>
+<polyline points='1345,780 800,780' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1072.5' y='761.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1072.5' y='761.225'>⑦ submit { answers: [...] }</tspan>
+</text>
+<text x='800' y='827.5' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='20' font-weight='400' text-anchor='middle'>
+<tspan x='800' y='827.5'>Solver·활성·해금·Slot 정답 비교</tspan>
+</text>
+<polyline points='800,900 1345,900' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1072.5' y='881.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1072.5' y='881.225'>⑧ 판정 + 누적 unlockedRoomIds</tspan>
+</text>
+<polyline points='255,980 800,980' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='527.5' y='961.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='527.5' y='961.225'>⑨ 주기적 세션 상태 조회</tspan>
+</text>
+<polyline points='800,1050 255,1050' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='527.5' y='1031.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='527.5' y='1031.225'>⑩ 상대도 누적 해금 상태 수신</tspan>
+</text>
+<rect x='60' y='1145' width='670' height='110' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='395' y='1181.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='395' y='1181.55'>R01 유지 + 새 방만 추가 로드</tspan>
+</text>
+<text x='395' y='1214.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='395' y='1214.4'>RoomsChanged → 역할별 ROOM → AnchorID</tspan>
+<tspan x='395' y='1240.5'>현재 없는 R02 콘텐츠는 로드 대기</tspan>
+</text>
+<rect x='870' y='1145' width='670' height='110' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='1205' y='1181.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='1205' y='1181.55'>R01 유지 + 새 방만 추가 로드</tspan>
+</text>
+<text x='1205' y='1214.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='1205' y='1214.4'>중복 스냅샷으로 모델을 다시 만들지 않음</tspan>
+<tspan x='1205' y='1240.5'>이전 공간으로 돌아갈 수 있는 구조 유지</tspan>
+</text>
+</svg>

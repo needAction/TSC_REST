@@ -14,6 +14,7 @@ export interface SessionDefinition {
 }
 
 export interface SessionSnapshot {
+  unlockedRoomIds?: readonly number[];
   sessionId: string;
   phase: SessionPhase;
   players: Player[];

@@ -1,0 +1,8 @@
+"ID","RoomNo","Role","RoomPrefabID","PuzzleID","TargetMs","ExitRule","Active","Next"
+"1001","1","Clue","13020","5001","120000","SolvedEach","Y","1003"
+"1003","2","Solver","13021","5002","120000","SolvedEach","Y","1005"
+"1005","3","Clue","13022","5003","120000","SolvedEach","Y","1007"
+"1007","4","Solver","13023","5004","120000","SolvedEach","Y","1009"
+"1009","5","Clue","13024","5005","120000","SolvedEach","Y","1011"
+"1011","6","Solver","13025","5006","120000","SolvedEach","Y","1013"
+"1013","7","Solver","13026","5007","180000","BothSolved","Y","0"

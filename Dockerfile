@@ -16,6 +16,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node data ./data
 
 USER node
 

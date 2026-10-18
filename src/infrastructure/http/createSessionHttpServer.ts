@@ -19,11 +19,20 @@ export function createSessionHttpServer(controller: SessionController): Server {
       return;
     }
 
-    const participantRoute = /^\/sessions\/([^/]+)(?:\/(ready|heartbeat|leave))?$/.exec(pathname);
+    const submitRoute = /^\/sessions\/([^/]+)\/puzzles\/(\d+)\/submit$/.exec(pathname);
+    if (request.method === "POST" && submitRoute) {
+      void controller.submit(request, response, submitRoute[1], Number(submitRoute[2]));
+      return;
+    }
+    const participantRoute = /^\/sessions\/([^/]+)(?:\/(ready|heartbeat|leave|data))?$/.exec(pathname);
     if (participantRoute !== null) {
       const sessionId = participantRoute[1];
       const action = participantRoute[2];
 
+      if (request.method === "GET" && action === "data") {
+        controller.data(request, response, sessionId);
+        return;
+      }
       if (request.method === "GET" && action === undefined) {
         controller.query(request, response, sessionId);
         return;

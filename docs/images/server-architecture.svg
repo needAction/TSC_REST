@@ -1,0 +1,99 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='1100' viewBox='0 0 1600 1100' role='img'>
+<title>서버 시작과 HTTP 요청의 책임 분리</title><desc>main.ts가 검증한 데이터를 주입한 뒤 HTTP 수신을 시작합니다. 요청마다 CSV 파일을 다시 읽지 않습니다.</desc><rect width='1600' height='1100' fill='white'/>
+<defs><marker id='arrow' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='9' markerHeight='9' orient='auto-start-reverse'><path d='M 0 0 L 10 5 L 0 10 z' fill='#506f85'/></marker></defs>
+<text x='60' y='69.8' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='32' font-weight='600' text-anchor='start'>
+<tspan x='60' y='69.8'>서버 시작과 HTTP 요청의 책임 분리</tspan>
+</text>
+<text x='60' y='122.5' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='20' font-weight='400' text-anchor='start'>
+<tspan x='60' y='122.5'>main.ts가 검증한 데이터를 주입한 뒤 HTTP 수신을 시작합니다. 요청마다 CSV 파일을 다시 읽지 않습니다.</tspan>
+</text>
+<rect x='60' y='190' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='280' y='226.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='280' y='226.55'>data/ CSV 23개</tspan>
+</text>
+<text x='280' y='274.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='280' y='274.4'>readCsvDirectory / UTF-8 입력</tspan>
+<tspan x='280' y='300.5'>CsvLoader → CsvParser</tspan>
+</text>
+<rect x='580' y='190' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='800' y='226.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='800' y='226.55'>CsvDataSet / CsvValidator</tspan>
+</text>
+<text x='800' y='274.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='800' y='274.4'>메모리 원본·스키마·게임 관계 검사</tspan>
+<tspan x='800' y='300.5'>CsvDataStore가 정상 원본만 등록</tspan>
+</text>
+<rect x='1100' y='190' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='1320' y='226.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='1320' y='226.55'>CsvGameData / 전송 묶음</tspan>
+</text>
+<text x='1320' y='274.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='1320' y='274.4'>읽기 전용 클래스·변환 캐시</tspan>
+<tspan x='1320' y='300.5'>CSV 직렬화 + SHA-256 version</tspan>
+</text>
+<polyline points='500,260 580,260' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1020,260 1100,260' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1320,330 1320,495' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<text x='1090' y='413.225' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='19' font-weight='400' text-anchor='middle'>
+<tspan x='1090' y='413.225'>생성자 DI / 같은 원본 재사용</tspan>
+</text>
+<rect x='60' y='495' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='280' y='531.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='280' y='531.55'>Node HTTP / Router</tspan>
+</text>
+<text x='280' y='579.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='280' y='579.4'>경로·메서드 → Controller</tspan>
+<tspan x='280' y='605.5'>Unity ↔ HTTP + JSON</tspan>
+</text>
+<rect x='580' y='495' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='800' y='531.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='800' y='531.55'>Controller / HTTP Handler</tspan>
+</text>
+<text x='800' y='579.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='800' y='579.4'>토큰 헤더·본문 제한·응답 변환</tspan>
+<tspan x='800' y='605.5'>no-store / 성공·실패 HTTP 상태</tspan>
+</text>
+<rect x='1100' y='495' width='440' height='140' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='1320' y='531.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='1320' y='531.55'>SessionService</tspan>
+</text>
+<text x='1320' y='579.4' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='1320' y='579.4'>참가자 인증 후 모델 조정</tspan>
+<tspan x='1320' y='605.5'>세션·데이터·제출을 묶는 Facade</tspan>
+</text>
+<polyline points='500,565 580,565' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1020,565 1100,565' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1320,635 1320,685 280,685 280,790' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1320,685 800,685 800,790' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<polyline points='1320,685 1320,790' fill='none' stroke='#506f85' stroke-width='2.4' marker-end='url(#arrow)'/>
+<rect x='60' y='790' width='440' height='145' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='280' y='826.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='280' y='826.55'>GameSession</tspan>
+</text>
+<text x='280' y='876.9' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='280' y='876.9'>A/B 역할·참가자·ready 보유</tspan>
+<tspan x='280' y='903'>Waiting / Loading / Playing</tspan>
+</text>
+<rect x='580' y='790' width='440' height='145' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='800' y='826.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='800' y='826.55'>ParticipantRegistry</tspan>
+</text>
+<text x='800' y='876.9' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='800' y='876.9'>토큰·HeartbeatLease 관리</tspan>
+<tspan x='800' y='903'>PeriodicTask → 만료·자리 정리</tspan>
+</text>
+<rect x='1100' y='790' width='440' height='145' rx='8' fill='#eef5fa' stroke='#c1cfda' stroke-width='1.5'/>
+<text x='1320' y='826.55' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='22' font-weight='600' text-anchor='middle'>
+<tspan x='1320' y='826.55'>RoomProgression</tspan>
+</text>
+<text x='1320' y='876.9' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='18' font-weight='400' text-anchor='middle'>
+<tspan x='1320' y='876.9'>Solver·해금·슬롯 정답 비교</tspan>
+<tspan x='1320' y='903'>solved / unlockedRoomIds 누적</tspan>
+</text>
+<text x='60' y='1001.775' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='21' font-weight='600' text-anchor='start'>
+<tspan x='60' y='1001.775'>수신 전 CSV 검증 실패 → 시작 중단   |   인증·결과 변환은 HTTP 경계, 게임 규칙은 모델의 책임입니다.</tspan>
+</text>
+<text x='60' y='1056.5' fill='#183045' font-family='Malgun Gothic, Noto Sans KR, sans-serif' font-size='20' font-weight='400' text-anchor='start'>
+<tspan x='60' y='1056.5'>한 프로세스·한 메모리 세션  ·  영구 저장·다중 세션·Protobuf 실통신·음성 중계는 현재 범위 밖입니다.</tspan>
+</text>
+</svg>

@@ -15,6 +15,7 @@
     "docker:local": "node scripts/deploy-docker.cjs local",
     "docker:cloud": "node scripts/deploy-docker.cjs cloud",
     "csv:read": "npm run build && node dist/tools/readCsv.js",
+    "csv:validate": "npm run build && node dist/tools/validateCsv.js",
     "csv:verify-client": "npm run build && node scripts/verify-csv-client.cjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
