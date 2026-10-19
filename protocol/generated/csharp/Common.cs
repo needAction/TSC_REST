@@ -26,11 +26,15 @@ namespace EscapeGame.Protocol.V1 {
           string.Concat(
             "ChZlc2NhcGUvdjEvY29tbW9uLnByb3RvEgllc2NhcGUudjEiOwoOU2Vzc2lv",
             "bkZhaWx1cmUSKQoEY29kZRgBIAEoDjIbLmVzY2FwZS52MS5TZXNzaW9uRXJy",
-            "b3JDb2RlKpgBChBTZXNzaW9uRXJyb3JDb2RlEiIKHlNFU1NJT05fRVJST1Jf",
+            "b3JDb2RlKs8CChBTZXNzaW9uRXJyb3JDb2RlEiIKHlNFU1NJT05fRVJST1Jf",
             "Q09ERV9VTlNQRUNJRklFRBAAEhAKDFNFU1NJT05fRlVMTBABEhUKEVNFU1NJ",
             "T05fTk9UX0ZPVU5EEAISFwoTSU5WQUxJRF9QQVJUSUNJUEFOVBADEh4KGlBB",
-            "UlRJQ0lQQU5UX1RPS0VOX1JFUVVJUkVEEARCGaoCFkVzY2FwZUdhbWUuUHJv",
-            "dG9jb2wuVjFiBnByb3RvMw=="));
+            "UlRJQ0lQQU5UX1RPS0VOX1JFUVVJUkVEEAQSEwoPSU5WQUxJRF9SRVFVRVNU",
+            "EAUSGgoWVU5TVVBQT1JURURfTUVESUFfVFlQRRAGEhUKEVBBWUxPQURfVE9P",
+            "X0xBUkdFEAcSEgoOUk9PTV9OT1RfRk9VTkQQCBIaChZTVUJNSVNTSU9OX05P",
+            "VF9BTExPV0VEEAkSFAoQR0FNRV9OT1RfUExBWUlORxAKEhIKDklOVEVSTkFM",
+            "X0VSUk9SEAsSEwoPUk9VVEVfTk9UX0ZPVU5EEAxCGaoCFkVzY2FwZUdhbWUu",
+            "UHJvdG9jb2wuVjFiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::EscapeGame.Protocol.V1.SessionErrorCode), }, null, new pbr::GeneratedClrTypeInfo[] {
@@ -47,6 +51,14 @@ namespace EscapeGame.Protocol.V1 {
     [pbr::OriginalName("SESSION_NOT_FOUND")] SessionNotFound = 2,
     [pbr::OriginalName("INVALID_PARTICIPANT")] InvalidParticipant = 3,
     [pbr::OriginalName("PARTICIPANT_TOKEN_REQUIRED")] ParticipantTokenRequired = 4,
+    [pbr::OriginalName("INVALID_REQUEST")] InvalidRequest = 5,
+    [pbr::OriginalName("UNSUPPORTED_MEDIA_TYPE")] UnsupportedMediaType = 6,
+    [pbr::OriginalName("PAYLOAD_TOO_LARGE")] PayloadTooLarge = 7,
+    [pbr::OriginalName("ROOM_NOT_FOUND")] RoomNotFound = 8,
+    [pbr::OriginalName("SUBMISSION_NOT_ALLOWED")] SubmissionNotAllowed = 9,
+    [pbr::OriginalName("GAME_NOT_PLAYING")] GameNotPlaying = 10,
+    [pbr::OriginalName("INTERNAL_ERROR")] InternalError = 11,
+    [pbr::OriginalName("ROUTE_NOT_FOUND")] RouteNotFound = 12,
   }
 
   #endregion

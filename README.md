@@ -2,7 +2,7 @@
 
 기준일: **2026-10-19**. 현재 저장소의 코드와 자동 검사 결과를 기준으로 설명합니다. 이전 기획서와 차이가 있으면 현재 요구사항과 데이터 테이블을 우선합니다.
 
-Node.js / TypeScript 서버가 두 참가자의 세션과 진행 상태를 소유합니다. 시작할 때 `data/` CSV를 한 번 읽어 검증·클래스 변환하고, 접속한 Unity 클라이언트에 같은 메모리 원본을 전달합니다. 퍼즐 입력은 서버가 슬롯 정답과 비교하며 다음 공간은 누적 해금합니다. 실제 통신은 **HTTP + JSON**입니다.
+Node.js / TypeScript 서버가 두 참가자의 세션과 진행 상태를 소유합니다. 시작할 때 `data/` CSV를 한 번 읽어 검증·클래스 변환하고, 접속한 Unity 클라이언트에 같은 메모리 원본을 전달합니다. 퍼즐 입력은 서버가 슬롯 정답과 비교하며 다음 공간은 누적 해금합니다. 게임 API의 실제 통신은 **HTTP + Google Protobuf 바이너리**입니다. 운영 확인 `/health`와 계약 `/openapi.json`은 JSON입니다.
 
 현재는 **프로세스당 메모리 세션 하나**입니다. 여러 세션 매칭·영구 저장·재시작 후 복구는 후속 범위이며, 음성은 Unity/Vivox가 담당합니다.
 
@@ -120,7 +120,7 @@ CSV는 UTF-8·쉼표 구분이고 첫 번째 비어 있지 않은 레코드가 �
 
 23개 모델은 ROOM_A/B, 두 ANCHOR, ARROW, CARD, CHARACTER_STAT, COLOR_LETTER, COMPONENT, CONSOLE, FORMULA, FRAME, GAME_CONFIG, LOCK, PAPER, PREFAB, PUZZLE, PUZZLE_SLOT, REGISTRY, SOUND, SOUND_LINK, TV, WIRE에 대응합니다. RoomData·AnchorData·CsvRowReader를 공통으로 사용합니다.
 
-스키마는 [CsvSchema.ts](src/data/validation/CsvSchema.ts)입니다. 필수 컬럼·형식·범위·중복·REGISTRY·ID 참조·ROOM/ANCHOR 공통 키·Next 순환·Solver/Clue·입력 앵커·슬롯·사운드 관계를 검사합니다. Unity의 XML 스키마와 규칙 변경을 함께 반영해야 합니다. 서버는 Unity 프리팹·씬 오브젝트 존재를 검사하지 않습니다.
+스키마는 [CsvSchema.ts](src/data/validation/CsvSchema.ts)입니다. 필수 컬럼·형식·범위·중복·REGISTRY·ID 참조·ROOM/ANCHOR 공통 키·Next 순환·활성 방 시작점 1개·전체 활성 방 연결·ExitRule 허용값(SolvedEach/BothSolved)·Solver/Clue·입력 앵커·슬롯·사운드 관계를 검사합니다. 활성 방 사이의 연결이 비활성 방으로 끊겨도 오류입니다. Unity의 XML 스키마와 규칙 변경을 함께 반영해야 합니다. 서버는 Unity 프리팹·씬 오브젝트 존재를 검사하지 않습니다.
 
 ```powershell
 npm.cmd run csv:validate
@@ -130,52 +130,35 @@ npm.cmd run csv:read -- "D:/경로/테이블.csv"
 
 ## 5. API 계약
 
-모든 응답은 JSON입니다. 참가자 요청은 join 응답의 `sessionId`, `participantToken`을 사용하고 토큰을 `x-participant-token` 헤더로 전달합니다. 토큰은 상태 스냅샷에 넣지 않습니다.
+게임 API는 `application/protobuf` 바이너리를 사용합니다. 메시지는 `protocol/escape/v1`, HTTP 바인딩은 `protocol/http/openapi.json`이 기준입니다. `/openapi.json`으로 Swagger/OpenAPI 계약을 확인할 수 있습니다. 참가자는 `x-participant-token` 헤더로 인증하고 토큰은 스냅샷에 포함하지 않습니다.
 
-| 메서드 / 경로 | 토큰 | 성공 응답 |
+| 메서드 / 경로 | 요청 본문 | GameApiResponse 성공 분기 |
 |---|---|---|
-| GET /health | 불필요 | 200, status=ok |
-| POST /sessions/join | 불필요 | 201, success·sessionId·player·participantToken |
-| GET /sessions/{id}/data | 필요 | 200, success·version·tables[{name,csv}] |
-| GET /sessions/{id} | 필요 | 200, success·snapshot |
-| POST /sessions/{id}/ready | 필요 | 200, success·snapshot |
-| POST /sessions/{id}/heartbeat | 필요 | 200, success=true |
-| POST /sessions/{id}/leave | 필요 | 200, success=true |
-| POST /sessions/{id}/puzzles/{puzzleId}/submit | 필요 | 200, success·accepted·correct·snapshot |
+| POST /sessions/join | 없음 | joined (201) |
+| GET /sessions/{id}/data | 없음 | data |
+| GET /sessions/{id} | 없음 | snapshot |
+| POST /sessions/{id}/ready | 없음 | snapshot |
+| POST /sessions/{id}/heartbeat | 없음 | completed |
+| POST /sessions/{id}/leave | 없음 | completed |
+| POST /sessions/{id}/rooms/answer | RoomCommandRequest: room_no + answers | room: value=정답 여부 |
+| POST /sessions/{id}/rooms/door | RoomCommandRequest: room_no, answers 비움 | room: value=문 허가 여부 |
+| POST /sessions/{id}/puzzles/{puzzleId}/submit | PuzzleCommandRequest: answers | puzzle (기존 디버그 호출 호환) |
 
-snapshot은 `sessionId`, `phase`, `players[{id,role,ready}]`, `unlockedRoomIds`를 포함합니다. 해금 목록은 양쪽 방의 ID를 포함하므로 각 클라이언트는 자기 역할의 ROOM 테이블로 선택합니다. 데이터의 version은 전송 묶음 식별값이며 조건부 GET이나 클라이언트 해시 재검증은 구현하지 않았습니다.
+join 외의 성공 상태는 200입니다. 실패는 `failure` oneof의 정수 SessionErrorCode와 HTTP 상태로 구분합니다. 올바른 false 응답도 room 분기를 가지며 통신·인증·역할 오류를 false로 변환하지 않습니다. 요청은 8192바이트, 답은 최대 64개·각 문자열 길이 256입니다. JSON 게임 본문은 415로 거절합니다. 응답에는 no-store와 nosniff를 적용합니다.
 
-제출 본문은 `{"answers":["값1","값2"]}`입니다. 순서는 PUZZLE_SLOT.Slot 순서이며 문자열 배열만 받습니다. HTTP 본문 8192 bytes, 최대 64개·문자열당 길이 256으로 제한합니다. 다른 참가자 요청은 본문이 필요하지 않습니다.
+## 6. 동기화·문 허가·누적 해금
 
-| 실패 / 판정 | 의미 |
-|---|---|
-| 409 SESSION_FULL | 빈자리 없음 |
-| 400 PARTICIPANT_TOKEN_REQUIRED | 토큰 헤더 누락·공백 |
-| 403 INVALID_PARTICIPANT | 잘못되거나 만료·폐기된 토큰 |
-| 404 SESSION_NOT_FOUND | 없는 세션 |
-| submit 400 / 413 | 잘못된 JSON·answers 형식 / 본문 크기 초과 |
-| submit 200, accepted=false | Playing 아님, 비활성/없는 퍼즐, Solver 역할 아님 또는 잠긴 방 |
-| submit 200, accepted=true, correct=false | 제출은 유효하지만 슬롯 정답과 다름 |
+1. 입장 후 서버 CSV와 최초 상태를 받아 검증·주입하고 Ingame을 로드합니다.
+2. 두 참가자의 씬 준비 보고가 끝나면 Playing입니다.
+3. 정답 제출은 방 번호로 요청합니다. 서버가 토큰에서 A/B를 결정하고 ROOM → PUZZLE → PUZZLE_SLOT을 조회합니다.
+4. Solver의 정답은 solved에 기록하고 자신의 ExitRule이 만족되면 자기 문을 허가하고 Next를 해금합니다.
+5. 상대는 자기 문과 처음 상호작용할 때 서버 확인을 받습니다. 이때 그쪽 문과 Next가 허가됩니다.
+6. 허가받은 문은 클라 캐시를 재사용해 이후 열기·닫기 통신을 생략합니다. 잠김 false는 재확인할 수 있습니다.
+7. 기존 방은 유지하고 퇴장·재입장·연결 종료 시 클라 허가 캐시를 초기화합니다.
 
-인증 실패는 success=false와 code로 반환합니다. 제출 거절·오답은 통신 실패와 구분합니다. 참가자 공통 응답에는 `Cache-Control: no-store`를 적용하고 미등록 경로는 404입니다.
+R01에서 B가 퍼즐 5001을 맞히면 먼저 1004가 추가되고, A가 자기 문을 확인하면 1003이 추가됩니다. 7번 BothSolved에서는 정답 여부와 doorAllowed가 다를 수 있습니다. Next=0은 추가 방이 없다는 뜻이며 엔딩 기능은 별도입니다.
 
-## 6. 동기화와 누적 해금
-
-![두 클라이언트의 데이터 수신 준비 보고와 다음 공간 해금 순서](docs/images/server-sync-sequence.png)
-
-[확대 가능한 SVG](docs/images/server-sync-sequence.svg)
-
-1. 입장 순서와 빈자리에 따라 A/B를 배정합니다.
-2. 클라이언트가 서버 CSV·최초 상태를 받아 검증·주입하고 Ingame을 로드합니다.
-3. 자기 R01이 준비되면 ready를 보고합니다. 두 명 모두 보고하면 Playing입니다.
-4. Solver가 입력값을 submit합니다. 서버는 활성 퍼즐·해금된 SolverRoom·참가자 역할을 확인합니다.
-5. Slot 순서의 Answer와 대소문자를 무시한 문자열 비교를 수행합니다. 성공하면 solved에 기록합니다.
-6. SolvedEach는 해당 퍼즐, BothSolved는 같은 방 번호의 양쪽 퍼즐 완료를 확인하고 Next를 추가합니다. Next=0은 마지막입니다.
-7. 제출 응답과 상대의 상태 조회에 누적 unlockedRoomIds를 포함합니다. 클라이언트가 새 방을 추가하고 기존 방을 유지합니다.
-
-동일 정답 제출은 해금 목록을 중복 증가시키지 않습니다. 방의 ID·순서·퍼즐은 CSV에서 읽으며 R01/R02 번호를 진행 모델에 하드코딩하지 않습니다. 현재 R01은 A=Clue, B=Solver이고 퍼즐 5001 성공 시 1001/1002에 1003/1004를 추가합니다. R02 실제 모델·앵커는 Unity에서 추후 완성할 범위입니다.
-
-서버는 프리팹을 생성하거나 위치·시점·다이얼 회전을 실시간 중계하지 않습니다. 현재 판정은 슬롯 정답 비교와 해금까지이며, 퍼즐별 입력 UI·표현·오답 잠금·문 열기 허가·타이머·엔딩은 추가 연결이 필요합니다.
+정답 비교와 문 허가는 공통 도메인에 모으고 프리팹·위치·손·문 애니메이션은 서버가 동기화하지 않습니다. 실제 입력 UI·1인칭 플레이어·문 연출·오답 잠금·타이머·엔딩은 추가 연결 범위입니다. 최신 연결 도식과 코드 설명은 [문·정답 API 안내](docs/room-api-and-protobuf.md)를 참고합니다.
 
 ## 7. 세션 수명과 연결 유지
 
@@ -187,7 +170,7 @@ heartbeat 성공만 생존 시간을 갱신합니다. 조회·ready·data·제�
 
 ## 8. Docker와 Protobuf
 
-Dockerfile은 Node 24 빌드·실행 단계를 분리하고 node 사용자로 실행하며 `data/`도 이미지에 포함합니다. 코드·CSV 변경 후 이미지 재빌드·컨테이너 교체가 필요합니다. 로컬 node_modules를 복사하지 않습니다.
+Dockerfile은 Node 24 빌드·실행 단계를 분리하고 node 사용자로 실행하며 `data/`와 빌드 단계에서 정리한 production 의존성(@bufbuild/protobuf)을 이미지에 포함합니다. 코드·CSV 변경 후 이미지 재빌드·컨테이너 교체가 필요합니다. 로컬 node_modules를 복사하지 않습니다.
 
 ```powershell
 if (!(Test-Path .env.deploy-local)) { Copy-Item .env.deploy-local.example .env.deploy-local }
@@ -198,7 +181,7 @@ npm.cmd run docker:local
 
 원격은 `.env.deploy-cloud`와 `.env.docker-cloud`를 준비해 `npm run docker:cloud`로 실행하는 수동 SSH 배포 도구입니다. 실제 클라우드 배포·Git push 기반 CI/CD·자동 롤백은 미완료입니다. 재배포로 메모리 세션은 초기화됩니다. [Docker 안내](docs/docker-deployment.md)의 설정을 참고합니다.
 
-Protobuf 원본은 `protocol/escape/v1`이며 생성 코드를 직접 편집하지 않습니다. `npm run proto:setup`, `npm run proto:sync`, `npm run proto:sync -- --apply`로 생성·검사·대상 배포합니다. 로컬 대상은 `protocol.projects.local.json`에 설정하고 생성·교차 검사에는 .NET SDK 10도 필요합니다. 현재 HTTP API 전체와 데이터·제출 계약이 Protobuf로 전환된 상태는 아닙니다. [도구 안내](protocol/TOOL.md)를 참고합니다.
+Protobuf 원본은 `protocol/escape/v1`이며 생성 코드를 직접 편집하지 않습니다. `npm run proto:setup`, `npm run proto:sync`, `npm run proto:sync -- --apply`로 생성·검사·대상 배포합니다. 로컬 대상은 `protocol.projects.local.json`에 설정하고 생성·교차 검사에는 .NET SDK 10도 필요합니다. 현재 게임 API는 Protobuf로 전환했습니다. `npm run api:sync -- --apply`는 OpenAPI/메시지 생성·교차 검사·임시 클라 실제 HTTP 검사 후 로컬 양쪽 생성 폴더에 반영합니다. `npm run api:verify`는 현재 클라 소스로 HTTP 왕복을 검사합니다. [도구 안내](protocol/TOOL.md)를 참고합니다.
 
 ## 9. 검사와 도식 재생성
 
@@ -207,9 +190,13 @@ npm.cmd test
 npm.cmd run csv:validate
 ```
 
-서버 빌드와 **128개 자동 검사 통과**, CSV **23개·오류 0·경고 0**, 모든 **2,861개 셀**의 클래스 변환·전송 왕복 보존을 확인했습니다. 검사에는 세션·HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델을 포함합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
+서버 빌드와 **142개 자동 검사 통과**, CSV **23개·오류 0·경고 0**, 모든 **2,861개 셀**의 클래스 변환·전송 왕복 보존을 확인했습니다. 검사에는 세션·HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델을 포함합니다. 콘텐츠 HTTP 검사는 주입한 정수 ms 시계를 진행시켜 10000ms 만료 후 데이터 요청 거절까지 확인합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
 
-Unity 저장소의 `Tools/CsvValidation.Tests`는 96개, `Tools/WorldPlayVerification/Run.ps1 -IncludeServer`는 실제 HTTP와 격리 Unity Play 33개를 통과했습니다. 게임 빌드 UI·렌더링·실제 음성 송수신은 별도 검증입니다.
+Unity 저장소의 `Tools/CsvValidation.Tests`는 기존 154개에 문 허가/Protobuf 검사 30개를 추가해 **184개**이며, 별도로 C# 클라 ↔ TS 실제 Protobuf HTTP 검사 **18개**가 통과했습니다. 이번 환경은 .NET 8 SDK가 없어 동일 소스를 임시 net10 프로젝트에서 검사했고 Unity 6.2 .NET Standard 2.1 참조 컴파일도 통과했습니다. 과거 기록에는 실제 HTTP와 격리 Unity Play 33개 통과가 있으나, 이번 수정의 Play 검증은 라이선스 클라이언트 연결 실패로 실행하지 못했습니다. 게임 빌드 UI·렌더링·실제 음성 송수신은 별도 검증입니다.
+
+이번 콘텐츠 검토 수정의 의도·파일별 설명·연결 도식은 [콘텐츠 검토 수정 안내](docs/content-review-fixes.md)에 정리했습니다. 기존 퍼즐 ID 디버그 진입점은 PuzzleSubmissionResult를 유지합니다. 새 방 번호 API는 bool 판정을 사용하고 오류는 별도 실패 경로로 전달합니다.
+
+클라이언트의 에디터/테스트/안정화 환경별 접속 config 및 확정된 Google Protobuf 통신 전환 요구사항은 [접속·상호작용·API 작업 범위](docs/client-environment-and-api-plan.md)를 참고합니다. 현재 게임 API는 HTTP+Protobuf입니다. 문·정답 판정과 허가 캐시까지 구현했고 1인칭 플레이어·실제 문/입력 UI 연결은 다음 작업입니다.
 
 도식의 PNG·SVG와 Windows PowerShell/System.Drawing 생성기를 함께 보관합니다.
 

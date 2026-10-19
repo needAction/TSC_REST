@@ -1,4 +1,5 @@
 const { test } = require("node:test");
+const {readReply}=require("./helpers/protobuf.cjs");
 const assert = require("node:assert/strict");
 const { GameSession } = require("../dist/models/GameSession");
 const { SessionController } = require("../dist/controllers/SessionController");
@@ -25,7 +26,7 @@ async function createFixture(t) {
   async function request(path, method = "GET", token) {
     const headers = token === undefined ? {} : { "x-participant-token": token };
     const response = await fetch(baseUrl + path, { method, headers, signal: AbortSignal.timeout(5000) });
-    return { status: response.status, headers: response.headers, body: await response.json() };
+    return { status: response.status, headers: response.headers, body: path === "/health" ? await response.json() : await readReply(response) };
   }
   return { clock, session, request };
 }
@@ -52,7 +53,7 @@ test("실제 HTTP 생존 확인은 성공·토큰 누락·인증 실패·없는 
   assert.equal(confirmed.status, 200);
   assert.deepEqual(confirmed.body, { success: true });
   assert.equal(confirmed.headers.get("cache-control"), "no-store");
-  assert.match(confirmed.headers.get("content-type"), /application\/json/);
+  assert.match(confirmed.headers.get("content-type"), /application\/protobuf/);
   assert.equal((await request("/sessions/test/heartbeat", "GET", token)).status, 404);
   assert.equal((await request("/sessions/test/unknown", "POST", token)).status, 404);
   assert.deepEqual((await request("/health")).body, { status: "ok" });

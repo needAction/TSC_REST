@@ -2,44 +2,47 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SessionController = void 0;
 const ParticipantHttpHandler_1 = require("./http/ParticipantHttpHandler");
+const ProtobufHttp_1 = require("./http/ProtobufHttp");
+const common_1 = require("../generated/escape/v1/common");
+const game_api_1 = require("../generated/escape/v1/game_api");
 class SessionController {
     sessions;
     constructor(sessions) {
         this.sessions = sessions;
     }
     data(request, response, sessionId) {
-        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.data(sessionId, token));
+        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.data(sessionId, token), "data");
     }
     async submit(request, response, sessionId, puzzleId) {
-        // 입력 크기와 형식은 HTTP 경계에서 제한합니다. 정답 비교는 모델의 책임입니다.
-        const chunks = [];
-        let size = 0;
         try {
-            for await (const chunk of request) {
-                size += chunk.length;
-                if (size > 8192) {
-                    response.writeHead(413);
-                    response.end();
-                    return;
-                }
-                chunks.push(Buffer.from(chunk));
-            }
-            const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-            const answers = body?.answers;
-            if (!Array.isArray(answers) || answers.length > 64 || !answers.every(value => typeof value === "string" && value.length <= 256))
-                throw new Error("Invalid answers.");
-            ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers));
+            const { answers } = await ProtobufHttp_1.ProtobufHttp.read(request, bytes => game_api_1.PuzzleCommandRequest.decode(bytes));
+            ProtobufHttp_1.ProtobufHttp.validateAnswers(answers);
+            ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers), "puzzle");
         }
-        catch {
-            if (!response.headersSent)
-                response.writeHead(400);
-            response.end(JSON.stringify({ message: "answers 문자열 배열이 필요합니다." }));
+        catch (error) {
+            this.contentFailure(request, response, error);
         }
+    }
+    async room(request, response, sessionId, answer) {
+        try {
+            const command = await ProtobufHttp_1.ProtobufHttp.read(request, bytes => game_api_1.RoomCommandRequest.decode(bytes));
+            if (!Number.isInteger(command.roomNo) || command.roomNo < 1 || (!answer && command.answers.length !== 0))
+                throw new ProtobufHttp_1.ProtobufRequestError(common_1.SessionErrorCode.INVALID_REQUEST);
+            ProtobufHttp_1.ProtobufHttp.validateAnswers(command.answers);
+            ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.decideRoom(sessionId, token, command.roomNo, answer ? command.answers : undefined), "room");
+        }
+        catch (error) {
+            this.contentFailure(request, response, error);
+        }
+    }
+    contentFailure(request, response, error) {
+        request.resume();
+        if (!response.headersSent && !response.destroyed)
+            ProtobufHttp_1.ProtobufHttp.failure(response, error instanceof ProtobufHttp_1.ProtobufRequestError ? error.code : common_1.SessionErrorCode.INTERNAL_ERROR);
     }
     join(response) {
         const result = this.sessions.join();
-        response.writeHead(result.success ? 201 : 409);
-        response.end(JSON.stringify(result));
+        ProtobufHttp_1.ProtobufHttp.result(response, result, "joined");
     }
     ready(request, response, sessionId) {
         ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.ready(sessionId, token));
@@ -48,10 +51,10 @@ class SessionController {
         ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.query(sessionId, token));
     }
     heartbeat(request, response, sessionId) {
-        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.heartbeat(sessionId, token));
+        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.heartbeat(sessionId, token), "completed");
     }
     leave(request, response, sessionId) {
-        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.leave(sessionId, token));
+        ParticipantHttpHandler_1.ParticipantHttpHandler.handle(request, response, token => this.sessions.leave(sessionId, token), "completed");
     }
 }
 exports.SessionController = SessionController;

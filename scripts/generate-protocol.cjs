@@ -29,7 +29,8 @@ const result = spawnSync(protoc, [
   "--ts_proto_opt=oneof=unions,outputServices=false,outputJsonMethods=false,esModuleInterop=true,env=node",
   `--csharp_out=${csOutput}`,
   "escape/v1/common.proto",
-  "escape/v1/session.proto"
+  "escape/v1/session.proto",
+  "escape/v1/game_api.proto"
 ], { cwd: root, stdio: "inherit" });
 if (result.error) {
   console.error(result.error.message);
@@ -40,3 +41,4 @@ if (result.status !== 0) {
   process.exit(1);
 }
 console.log("Protobuf C#·TypeScript 생성 완료");
+require("./generate-http-api.cjs").generateHttpApi(tsOutput, csOutput);

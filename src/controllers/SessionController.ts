@@ -1,40 +1,45 @@
 import { IncomingMessage, ServerResponse } from "node:http";
 import { SessionService } from "../services/SessionService";
 import { ParticipantHttpHandler } from "./http/ParticipantHttpHandler";
+import { ProtobufHttp, ProtobufRequestError } from "./http/ProtobufHttp";
+import { SessionErrorCode } from "../generated/escape/v1/common";
+import { PuzzleCommandRequest, RoomCommandRequest } from "../generated/escape/v1/game_api";
 
 export class SessionController {
   constructor(private readonly sessions: SessionService) {}
 
   data(request: IncomingMessage, response: ServerResponse, sessionId: string): void {
-    ParticipantHttpHandler.handle(request, response, token => this.sessions.data(sessionId, token));
+    ParticipantHttpHandler.handle(request, response, token => this.sessions.data(sessionId, token), "data");
   }
 
   async submit(request: IncomingMessage, response: ServerResponse, sessionId: string, puzzleId: number): Promise<void> {
-    // 입력 크기와 형식은 HTTP 경계에서 제한합니다. 정답 비교는 모델의 책임입니다.
-    const chunks: Buffer[] = [];
-    let size = 0;
     try {
-      for await (const chunk of request) {
-        size += chunk.length;
-        if (size > 8192) { response.writeHead(413); response.end(); return; }
-        chunks.push(Buffer.from(chunk));
-      }
-      const body: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-      const answers = (body as { answers?: unknown })?.answers;
-      if (!Array.isArray(answers) || answers.length > 64 || !answers.every(value => typeof value === "string" && value.length <= 256))
-        throw new Error("Invalid answers.");
-      ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers));
-    } catch {
-      if (!response.headersSent) response.writeHead(400);
-      response.end(JSON.stringify({ message: "answers 문자열 배열이 필요합니다." }));
-    }
+      const { answers } = await ProtobufHttp.read(request, bytes => PuzzleCommandRequest.decode(bytes));
+      ProtobufHttp.validateAnswers(answers);
+      ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers), "puzzle");
+    } catch (error) { this.contentFailure(request, response, error); }
+  }
+
+  async room(request: IncomingMessage, response: ServerResponse, sessionId: string, answer: boolean): Promise<void> {
+    try {
+      const command = await ProtobufHttp.read(request, bytes => RoomCommandRequest.decode(bytes));
+      if (!Number.isInteger(command.roomNo) || command.roomNo < 1 || (!answer && command.answers.length !== 0))
+        throw new ProtobufRequestError(SessionErrorCode.INVALID_REQUEST);
+      ProtobufHttp.validateAnswers(command.answers);
+      ParticipantHttpHandler.handle(request, response,
+        token => this.sessions.decideRoom(sessionId, token, command.roomNo, answer ? command.answers : undefined), "room");
+    } catch (error) { this.contentFailure(request, response, error); }
+  }
+  private contentFailure(request: IncomingMessage, response: ServerResponse, error: unknown): void {
+    request.resume();
+    if (!response.headersSent && !response.destroyed)
+      ProtobufHttp.failure(response, error instanceof ProtobufRequestError ? error.code : SessionErrorCode.INTERNAL_ERROR);
   }
 
   join(response: ServerResponse): void {
     const result = this.sessions.join();
 
-    response.writeHead(result.success ? 201 : 409);
-    response.end(JSON.stringify(result));
+    ProtobufHttp.result(response, result, "joined");
   }
 
   ready(
@@ -53,11 +58,11 @@ export class SessionController {
 
   heartbeat(request: IncomingMessage, response: ServerResponse, sessionId: string): void {
     ParticipantHttpHandler.handle(request, response,
-      token => this.sessions.heartbeat(sessionId, token));
+      token => this.sessions.heartbeat(sessionId, token), "completed");
   }
 
   leave(request: IncomingMessage, response: ServerResponse, sessionId: string): void {
     ParticipantHttpHandler.handle(request, response,
-      token => this.sessions.leave(sessionId, token));
+      token => this.sessions.leave(sessionId, token), "completed");
   }
 }

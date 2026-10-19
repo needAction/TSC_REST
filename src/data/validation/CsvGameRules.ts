@@ -1,5 +1,5 @@
 import { TableTags } from "./CsvSchema";
-import { csvList, finiteNumber, int32 } from "./CsvValidation";
+import { csvList, finiteNumber, int32, isActive } from "./CsvValidation";
 import type { CsvValidationContext, CsvValidationTable, ICsvValidationRule } from "./CsvValidation";
 import type { CsvRow } from "../../common/csv/CsvDocument";
 
@@ -15,6 +15,7 @@ export class CsvRoomRule implements ICsvValidationRule {
         visited.add(next); next = table.find(next)!.get("Next");
       }
     }
+    for (const table of rooms) this.checkActiveChain(context, table);
     const names = new Set<string>();
     for (const table of context.tagged(TableTags.anchor)) for (const row of table.rows) {
       context.signal?.throwIfAborted();
@@ -27,6 +28,26 @@ export class CsvRoomRule implements ICsvValidationRule {
     }
     this.checkPlacement(context, TableTags.arrow, "Order");
     this.checkPlacement(context, TableTags.wire, "Port");
+  }
+  private checkActiveChain(context: CsvValidationContext, table: CsvValidationTable): void {
+    const active = table.rows.filter(isActive);
+    const byId = new Map(active.map(row => [row.get(table.key!), row]));
+    const incoming = new Set(active.map(row => row.get("Next")));
+    const starts = active.filter(row => !incoming.has(row.get(table.key!)));
+    const line = active[0]?.sourceLine ?? table.rows[0]?.sourceLine ?? 1;
+    if (starts.length !== 1) {
+      context.add("RoomStartCount", table.name, line, "Next", String(starts.length));
+      return;
+    }
+    const visited = new Set<string>();
+    let next = starts[0]!.get(table.key!);
+    while (next !== "0" && byId.has(next) && !visited.has(next)) {
+      context.signal?.throwIfAborted();
+      visited.add(next);
+      next = byId.get(next)!.get("Next");
+    }
+    if (next !== "0" || visited.size !== active.length)
+      context.add("RoomDisconnected", table.name, line, "Next", String(visited.size), String(active.length));
   }
   private checkPlacement(context: CsvValidationContext, tag: string, column: string): void {
     const values = new Set<string>();

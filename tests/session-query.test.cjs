@@ -1,4 +1,5 @@
 const { test } = require("node:test");
+const {decodeReply}=require("./helpers/protobuf.cjs");
 const assert = require("node:assert/strict");
 const { GameSession } = require("../dist/models/GameSession");
 const { createSessionService } = require("./helpers/createSessionService.cjs");
@@ -33,7 +34,7 @@ test("조회 Controller는 오류 상태와 캐시 금지 헤더를 반환한다
       headers: {},
       setHeader(name, value) { this.headers[name] = value; },
       writeHead(status) { this.status = status; },
-      end(body) { this.body = JSON.parse(body); }
+      end(body) { this.body = decodeReply(body); }
     };
     controller.query({ headers: token === undefined ? {} : { "x-participant-token": token } }, response, sessionId);
     assert.equal(response.headers["Cache-Control"], "no-store");

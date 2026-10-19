@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "api:verify": "npm run build && node scripts/verify-game-api.cjs",
+    "api:sync": "npm run build && node scripts/sync-game-api.cjs",
     "proto:generate": "node scripts/generate-protocol.cjs",
     "proto:setup": "node scripts/setup-protocol.cjs",
     "proto:verify": "node scripts/verify-protocol.cjs",

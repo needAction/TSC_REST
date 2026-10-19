@@ -27,22 +27,22 @@ namespace EscapeGame.Protocol.V1 {
             "Chdlc2NhcGUvdjEvc2Vzc2lvbi5wcm90bxIJZXNjYXBlLnYxGhZlc2NhcGUv",
             "djEvY29tbW9uLnByb3RvIl4KDlBsYXllclNuYXBzaG90EhEKCXBsYXllcl9p",
             "ZBgBIAEoCRIjCgRyb2xlGAIgASgOMhUuZXNjYXBlLnYxLlBsYXllclJvbGUS",
-            "FAoMc2NlbmVfbG9hZGVkGAMgASgIInkKD1Nlc3Npb25TbmFwc2hvdBISCgpz",
-            "ZXNzaW9uX2lkGAEgASgJEiYKBXBoYXNlGAIgASgOMhcuZXNjYXBlLnYxLlNl",
-            "c3Npb25QaGFzZRIqCgdwbGF5ZXJzGAMgAygLMhkuZXNjYXBlLnYxLlBsYXll",
-            "clNuYXBzaG90In8KFFF1ZXJ5U2Vzc2lvblJlc3BvbnNlEi4KCHNuYXBzaG90",
-            "GAEgASgLMhouZXNjYXBlLnYxLlNlc3Npb25TbmFwc2hvdEgAEiwKB2ZhaWx1",
-            "cmUYAiABKAsyGS5lc2NhcGUudjEuU2Vzc2lvbkZhaWx1cmVIAEIJCgdvdXRj",
-            "b21lKlQKDFNlc3Npb25QaGFzZRIdChlTRVNTSU9OX1BIQVNFX1VOU1BFQ0lG",
-            "SUVEEAASCwoHV0FJVElORxABEgsKB0xPQURJTkcQAhILCgdQTEFZSU5HEAMq",
-            "QQoKUGxheWVyUm9sZRIbChdQTEFZRVJfUk9MRV9VTlNQRUNJRklFRBAAEgoK",
-            "BlJPTEVfQRABEgoKBlJPTEVfQhACQhmqAhZFc2NhcGVHYW1lLlByb3RvY29s",
-            "LlYxYgZwcm90bzM="));
+            "FAoMc2NlbmVfbG9hZGVkGAMgASgIIpQBCg9TZXNzaW9uU25hcHNob3QSEgoK",
+            "c2Vzc2lvbl9pZBgBIAEoCRImCgVwaGFzZRgCIAEoDjIXLmVzY2FwZS52MS5T",
+            "ZXNzaW9uUGhhc2USKgoHcGxheWVycxgDIAMoCzIZLmVzY2FwZS52MS5QbGF5",
+            "ZXJTbmFwc2hvdBIZChF1bmxvY2tlZF9yb29tX2lkcxgEIAMoBSJ/ChRRdWVy",
+            "eVNlc3Npb25SZXNwb25zZRIuCghzbmFwc2hvdBgBIAEoCzIaLmVzY2FwZS52",
+            "MS5TZXNzaW9uU25hcHNob3RIABIsCgdmYWlsdXJlGAIgASgLMhkuZXNjYXBl",
+            "LnYxLlNlc3Npb25GYWlsdXJlSABCCQoHb3V0Y29tZSpUCgxTZXNzaW9uUGhh",
+            "c2USHQoZU0VTU0lPTl9QSEFTRV9VTlNQRUNJRklFRBAAEgsKB1dBSVRJTkcQ",
+            "ARILCgdMT0FESU5HEAISCwoHUExBWUlORxADKkEKClBsYXllclJvbGUSGwoX",
+            "UExBWUVSX1JPTEVfVU5TUEVDSUZJRUQQABIKCgZST0xFX0EQARIKCgZST0xF",
+            "X0IQAkIZqgIWRXNjYXBlR2FtZS5Qcm90b2NvbC5WMWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::EscapeGame.Protocol.V1.CommonReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::EscapeGame.Protocol.V1.SessionPhase), typeof(global::EscapeGame.Protocol.V1.PlayerRole), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::EscapeGame.Protocol.V1.PlayerSnapshot), global::EscapeGame.Protocol.V1.PlayerSnapshot.Parser, new[]{ "PlayerId", "Role", "SceneLoaded" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::EscapeGame.Protocol.V1.SessionSnapshot), global::EscapeGame.Protocol.V1.SessionSnapshot.Parser, new[]{ "SessionId", "Phase", "Players" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::EscapeGame.Protocol.V1.SessionSnapshot), global::EscapeGame.Protocol.V1.SessionSnapshot.Parser, new[]{ "SessionId", "Phase", "Players", "UnlockedRoomIds" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::EscapeGame.Protocol.V1.QuerySessionResponse), global::EscapeGame.Protocol.V1.QuerySessionResponse.Parser, new[]{ "Snapshot", "Failure" }, new[]{ "Outcome" }, null, null, null)
           }));
     }
@@ -376,6 +376,7 @@ namespace EscapeGame.Protocol.V1 {
       sessionId_ = other.sessionId_;
       phase_ = other.phase_;
       players_ = other.players_.Clone();
+      unlockedRoomIds_ = other.unlockedRoomIds_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -420,6 +421,17 @@ namespace EscapeGame.Protocol.V1 {
       get { return players_; }
     }
 
+    /// <summary>Field number for the "unlocked_room_ids" field.</summary>
+    public const int UnlockedRoomIdsFieldNumber = 4;
+    private static readonly pb::FieldCodec<int> _repeated_unlockedRoomIds_codec
+        = pb::FieldCodec.ForInt32(34);
+    private readonly pbc::RepeatedField<int> unlockedRoomIds_ = new pbc::RepeatedField<int>();
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::RepeatedField<int> UnlockedRoomIds {
+      get { return unlockedRoomIds_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -438,6 +450,7 @@ namespace EscapeGame.Protocol.V1 {
       if (SessionId != other.SessionId) return false;
       if (Phase != other.Phase) return false;
       if(!players_.Equals(other.players_)) return false;
+      if(!unlockedRoomIds_.Equals(other.unlockedRoomIds_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -448,6 +461,7 @@ namespace EscapeGame.Protocol.V1 {
       if (SessionId.Length != 0) hash ^= SessionId.GetHashCode();
       if (Phase != global::EscapeGame.Protocol.V1.SessionPhase.Unspecified) hash ^= Phase.GetHashCode();
       hash ^= players_.GetHashCode();
+      hash ^= unlockedRoomIds_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -475,6 +489,7 @@ namespace EscapeGame.Protocol.V1 {
         output.WriteEnum((int) Phase);
       }
       players_.WriteTo(output, _repeated_players_codec);
+      unlockedRoomIds_.WriteTo(output, _repeated_unlockedRoomIds_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -494,6 +509,7 @@ namespace EscapeGame.Protocol.V1 {
         output.WriteEnum((int) Phase);
       }
       players_.WriteTo(ref output, _repeated_players_codec);
+      unlockedRoomIds_.WriteTo(ref output, _repeated_unlockedRoomIds_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -511,6 +527,7 @@ namespace EscapeGame.Protocol.V1 {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Phase);
       }
       size += players_.CalculateSize(_repeated_players_codec);
+      size += unlockedRoomIds_.CalculateSize(_repeated_unlockedRoomIds_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -530,6 +547,7 @@ namespace EscapeGame.Protocol.V1 {
         Phase = other.Phase;
       }
       players_.Add(other.players_);
+      unlockedRoomIds_.Add(other.unlockedRoomIds_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -561,6 +579,11 @@ namespace EscapeGame.Protocol.V1 {
             players_.AddEntriesFrom(input, _repeated_players_codec);
             break;
           }
+          case 34:
+          case 32: {
+            unlockedRoomIds_.AddEntriesFrom(input, _repeated_unlockedRoomIds_codec);
+            break;
+          }
         }
       }
     #endif
@@ -590,6 +613,11 @@ namespace EscapeGame.Protocol.V1 {
           }
           case 26: {
             players_.AddEntriesFrom(ref input, _repeated_players_codec);
+            break;
+          }
+          case 34:
+          case 32: {
+            unlockedRoomIds_.AddEntriesFrom(ref input, _repeated_unlockedRoomIds_codec);
             break;
           }
         }

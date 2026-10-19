@@ -1,0 +1,45 @@
+syntax = "proto3";
+package escape.v1;
+option csharp_namespace = "EscapeGame.Protocol.V1";
+import "escape/v1/common.proto";
+import "escape/v1/session.proto";
+
+// Header participant token supplies identity. No client-selected player role or validation algorithm.
+message RoomCommandRequest {
+  int32 room_no = 1;
+  repeated string answers = 2;
+}
+message PuzzleCommandRequest { repeated string answers = 1; }
+message JoinSessionReply {
+  string session_id = 1;
+  PlayerSnapshot player = 2;
+  string participant_token = 3;
+}
+message OperationCompleted {}
+message CsvText { string name = 1; string csv = 2; }
+message CsvDataBundle { string version = 1; repeated CsvText tables = 2; }
+message PuzzleSubmissionReply {
+  bool accepted = 1;
+  bool correct = 2;
+  SessionSnapshot snapshot = 3;
+}
+message RoomDecisionReply {
+  int32 room_no = 1;
+  // Answer endpoint: correct. Door endpoint: allowed.
+  bool value = 2;
+  // An answer may be correct before BothSolved grants this door.
+  bool door_allowed = 3;
+  SessionSnapshot snapshot = 4;
+}
+// Explicit outcome presence distinguishes a legitimate false from an empty/malformed reply.
+message GameApiResponse {
+  oneof outcome {
+    JoinSessionReply joined = 1;
+    SessionSnapshot snapshot = 2;
+    OperationCompleted completed = 3;
+    CsvDataBundle data = 4;
+    PuzzleSubmissionReply puzzle = 5;
+    RoomDecisionReply room = 6;
+    SessionFailure failure = 7;
+  }
+}

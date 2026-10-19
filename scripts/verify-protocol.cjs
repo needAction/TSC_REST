@@ -44,7 +44,7 @@ try {
 
   const cases = {
     success: { outcome: { $case: "snapshot", snapshot: {
-      sessionId: "session-001", phase: SessionPhase.LOADING,
+      sessionId: "session-001", phase: SessionPhase.LOADING, unlockedRoomIds: [],
       players: [
         { playerId: "player-a", role: PlayerRole.ROLE_A, sceneLoaded: true },
         { playerId: "player-b", role: PlayerRole.ROLE_B, sceneLoaded: false }
@@ -77,7 +77,7 @@ try {
   const csSuccess = QuerySessionResponse.decode(fs.readFileSync(path.join(csFolder, "csharp-success.bin")));
   assert.equal(csSuccess.outcome.$case, "snapshot");
   assert.deepEqual(csSuccess.outcome.snapshot, {
-    sessionId: "csharp-session", phase: SessionPhase.WAITING,
+    sessionId: "csharp-session", phase: SessionPhase.WAITING, unlockedRoomIds: [],
     players: [{ playerId: "csharp-a", role: PlayerRole.ROLE_A, sceneLoaded: true }]
   });
   assert.deepEqual(QuerySessionResponse.decode(fs.readFileSync(path.join(csFolder, "csharp-failure.bin"))), {

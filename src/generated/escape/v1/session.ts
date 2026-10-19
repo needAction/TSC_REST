@@ -35,6 +35,7 @@ export interface SessionSnapshot {
   sessionId: string;
   phase: SessionPhase;
   players: PlayerSnapshot[];
+  unlockedRoomIds: number[];
 }
 
 export interface QuerySessionResponse {
@@ -121,7 +122,7 @@ export const PlayerSnapshot: MessageFns<PlayerSnapshot> = {
 };
 
 function createBaseSessionSnapshot(): SessionSnapshot {
-  return { sessionId: "", phase: 0, players: [] };
+  return { sessionId: "", phase: 0, players: [], unlockedRoomIds: [] };
 }
 
 export const SessionSnapshot: MessageFns<SessionSnapshot> = {
@@ -134,6 +135,13 @@ export const SessionSnapshot: MessageFns<SessionSnapshot> = {
     }
     for (const v of message.players) {
       PlayerSnapshot.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.unlockedRoomIds.length !== 0) {
+      writer.uint32(34).fork();
+      for (const v of message.unlockedRoomIds) {
+        writer.int32(v);
+      }
+      writer.join();
     }
     return writer;
   },
@@ -175,6 +183,24 @@ export const SessionSnapshot: MessageFns<SessionSnapshot> = {
             message.players.push(PlayerSnapshot.decode(reader, reader.uint32()));
             continue;
           }
+          case 4: {
+            if (tag === 32) {
+              message.unlockedRoomIds.push(reader.int32());
+
+              continue;
+            }
+
+            if (tag === 34) {
+              const end2 = reader.uint32() + reader.pos;
+              while (reader.pos < end2) {
+                message.unlockedRoomIds.push(reader.int32());
+              }
+
+              continue;
+            }
+
+            break;
+          }
         }
         if ((tag & 7) === 4 || tag === 0) {
           break;
@@ -195,6 +221,7 @@ export const SessionSnapshot: MessageFns<SessionSnapshot> = {
     message.sessionId = object.sessionId ?? "";
     message.phase = object.phase ?? 0;
     message.players = object.players?.map((e) => PlayerSnapshot.fromPartial(e)) || [];
+    message.unlockedRoomIds = object.unlockedRoomIds?.map((e) => e) || [];
     return message;
   },
 };

@@ -25,7 +25,7 @@ function fingerprint() {
   const contracts = walk(path.join(root, "protocol/escape"), ".proto");
   const contractHash = hash(Buffer.from(JSON.stringify(Object.entries(contracts).map(([name, value]) => [name, hash(value)]))));
   const tools = { tsProto: require("ts-proto/package.json").version, grpcTools: "2.76.0", csharpRuntime: "3.33.0" };
-  const inputs = ["package-lock.json", "scripts/generate-protocol.cjs", "scripts/verify-protocol.cjs", "protocol/verification/csharp/ProtocolVerification.csproj",
+  const inputs = ["protocol/http/openapi.json", "scripts/generate-http-api.cjs", "scripts/protocol-tool/Deployment.cjs", "package-lock.json", "scripts/generate-protocol.cjs", "scripts/verify-protocol.cjs", "protocol/verification/csharp/ProtocolVerification.csproj",
     "protocol/verification/csharp/Program.cs", "protocol/verification/csharp/packages.lock.json"];
   return { contractHash, tools, fingerprint: hash(Buffer.from(JSON.stringify({ contractHash, tools,
     inputs: inputs.map(name => [name, hash(fs.readFileSync(path.join(root, name)))]) }))) };

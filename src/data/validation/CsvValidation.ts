@@ -6,7 +6,7 @@ export type CsvValidationSeverity = "Error" | "Warning";
 export type CsvValidationCode = "ReadFailed" | "ParseError" | "UnknownSchema" | "MissingColumn" | "UnknownColumn" |
   "EmptyTable" | "EmptyValue" | "Whitespace" | "InvalidValue" | "DuplicateKey" | "MissingRegistry" |
   "MissingTable" | "UnknownSheet" | "MissingReference" | "InactiveReference" | "UnregisteredTable" |
-  "RoomMissing" | "RoomCycle" | "SlotCount" | "SlotRange" | "PuzzleRoom" | "InputRoom" | "ConsoleSlots" |
+  "RoomMissing" | "RoomCycle" | "RoomStartCount" | "RoomDisconnected" | "SlotCount" | "SlotRange" | "PuzzleRoom" | "InputRoom" | "ConsoleSlots" |
   "InvalidDistance" | "InvalidLetters";
 
 export class CsvValidationIssue {

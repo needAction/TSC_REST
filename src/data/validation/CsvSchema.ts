@@ -1,3 +1,5 @@
+import { roomExitRuleNames } from "../RoomExitRules";
+
 export interface CsvColumnSchema {
   readonly name: string;
   readonly kind: "text" | "integer" | "number";
@@ -84,7 +86,7 @@ const roomProfile = {
     {name: "RoomPrefabID", kind: "integer", min: 1},
     {name: "PuzzleID", kind: "integer", min: 1},
     {name: "TargetMs", kind: "integer", min: 1},
-    {name: "ExitRule", kind: "text"},
+    {name: "ExitRule", kind: "text", values: roomExitRuleNames},
     {name: "Active", kind: "text", values: ["Y", "N"]},
     {name: "Next", kind: "integer", min: 0},
   ],

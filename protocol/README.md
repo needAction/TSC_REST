@@ -1,11 +1,10 @@
 # Protobuf 계약과 코드 생성
 
-현재 단계는 코드 생성·바이너리 호환성 검증입니다. HTTP API는 계속 JSON을 사용합니다.
-Unity Assets에는 아직 생성 코드나 런타임 DLL을 설치하지 않았습니다.
+현재 게임 HTTP API는 Google Protobuf 바이너리이며 Unity에는 생성 코드와 Google.Protobuf 런타임이 구성되어 있습니다. 운영 확인 /health와 계약 /openapi.json은 JSON입니다. 최신 코드·검사·자동 생성 배포는 [문·정답 API 안내](../docs/room-api-and-protobuf.md)를 참고합니다.
 
 ## 계약의 기준
 
-- 원본은 escape/v1/common.proto와 session.proto입니다.
+- 메시지 원본은 escape/v1/common.proto, session.proto, game_api.proto이며 HTTP 바인딩은 http/openapi.json입니다.
 - 생성 파일은 직접 편집하지 않습니다.
 - 필드 번호·enum 숫자의 의미를 유지하고, 삭제 시 번호와 이름을 reserved로 남깁니다.
 - Phase/Role/Error의 0은 미지정입니다. 오류 0과 알 수 없는 값은 도메인 검증에서 거부해야 합니다.
@@ -77,5 +76,4 @@ Google.Protobuf의 .NET Standard 2.0을 Unity 2.1 참조에 연결하므로 CS17
 
 서버·Unity 생성 코드 배포 도구의 경로 설정과 실행은 TOOL.md에 있습니다.
 
-Unity용 Google.Protobuf 런타임 의존성을 구성하고 생성 코드를 가져온 뒤,
-조회 API 하나를 Protobuf로 전환합니다. 이후 기존 입장·로딩 완료 흐름을 확장합니다.
+게임 API 전환과 생성 배포를 완료했습니다. 다음 단계는 1인칭 플레이어와 CSV 기반 문·정답 입력 UI를 공개 게임 계약에 연결하고 실제 Unity Play/빌드를 확인하는 것입니다.

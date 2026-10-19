@@ -58,6 +58,18 @@ const checks = [
   ["사운드 참조", x => cell(x, "SOUND_LINK", 0, "SoundID", "99999"), at("SOUND_LINK", "SoundID", "MissingReference")],
   ["다음 방 플레이어", x => cell(x, "ROOM_A", 0, "Next", "1002"), at("ROOM_A", "Next", "MissingReference")],
   ["다음 방 순환", x => cell(x, "ROOM_A", 1, "Next", "1001"), at("ROOM_A", "Next", "RoomCycle")],
+  ["활성 방 시작점 분리", x => cell(x, "ROOM_A", 0, "Next", "0"), at("ROOM_A", "Next", "RoomStartCount")],
+  ["활성 방 없는 시작점", x => {
+    const count = parser.read(x.ROOM_A).rows.length;
+    for (let i = 0; i < count; i++) cell(x, "ROOM_A", i, "Active", "N");
+  }, at("ROOM_A", "Next", "RoomStartCount")],
+  ["단일 시작점 밖의 순환", x => {
+    cell(x, "ROOM_A", 0, "Next", "0");
+    cell(x, "ROOM_A", 6, "Next", "1003");
+  }, at("ROOM_A", "Next", "RoomDisconnected")],
+  ["비활성 중간 방으로 시작점 분리", x => cell(x, "ROOM_A", 1, "Active", "N"), at("ROOM_A", "Next", "RoomStartCount")],
+  ["비활성 마지막 방으로 단절", x => cell(x, "ROOM_A", 6, "Active", "N"), at("ROOM_A", "Next", "RoomDisconnected")],
+  ["미지원 탈출 규칙", x => cell(x, "ROOM_A", 0, "ExitRule", "BothSolvd"), at("ROOM_A", "ExitRule", "InvalidValue")],
   ["공통 앵커 방", x => cell(x, "ANCHOR_INTERACT", 0, "RoomNo", "99"), at("ANCHOR_INTERACT", "RoomNo", "RoomMissing")],
   ["음량 범위", x => cell(x, "SOUND", 0, "Volume", "2"), at("SOUND", "Volume", "InvalidValue")],
   ["거리 범위", x => cell(x, "SOUND", 1, "MinDist", "9"), at("SOUND", "MaxDist", "InvalidDistance")],

@@ -64,6 +64,20 @@ test("계획 이후 파일 변경은 적용 전에 거부한다", () => fixture(
   assert.equal(fs.readFileSync(path.join(root, "generated/Test.ts"), "utf8"), "external change");
 }));
 
+test("Git 줄바꿈 변환만 허용하고 실제 코드 수정과 계획 이후 변환은 계속 거부한다", () => fixture(root => {
+  const original = new ProjectTarget("client", root, "generated", { "Test.cs": content("class Before {}\n") }, verification);
+  new Deployment(path.join(root, "initial")).apply(original.plan());
+  const file = path.join(root, "generated/Test.cs");
+  fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("\n","\r\n"));
+  const next = new ProjectTarget("client", root, "generated", { "Test.cs": content("class After {}\n") }, verification);
+  const writes = next.plan();
+  assert.equal(writes[0].changed,true);
+  fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("\r\n","\n"));
+  assert.throws(()=>new Deployment(path.join(root,"stale")).apply(writes),/계획 이후/);
+  fs.writeFileSync(file, content("class UserEdit {}\n"));
+  assert.throws(()=>next.plan(),/수동 변경/);
+}));
+
 test("중간 쓰기 실패 시 기존 파일을 되돌리고 백업을 보존한다", () => fixture(root => {
   const target = new ProjectTarget("server", root, "generated", { "A.ts": content("old"), "B.ts": content("old") }, verification);
   new Deployment(path.join(root, "initial-backup")).apply(target.plan());

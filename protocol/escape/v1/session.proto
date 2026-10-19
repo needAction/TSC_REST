@@ -28,6 +28,7 @@ message SessionSnapshot {
   string session_id = 1;
   SessionPhase phase = 2;
   repeated PlayerSnapshot players = 3;
+  repeated int32 unlocked_room_ids = 4;
 }
 
 message QuerySessionResponse {
