@@ -30,7 +30,7 @@ test('bundle roundtrip preserves every cell and version',async()=>{
  for(const table of bundle.tables){const original=data.source.getDocument(table.name),parsed=parser.read(table.csv,table.name);
  assert.deepEqual(parsed.headers,original.headers);assert.equal(parsed.rows.length,original.rows.length);
  original.rows.forEach((row,i)=>original.headers.forEach(header=>{assert.equal(parsed.rows[i].get(header),row.get(header));cells++;}));}
- assert.equal(cells,2861);
+ assert.ok(cells>0,'every source cell was compared; row counts are content data');
 });
 test('progression checks role, active room, answers and retains prior rooms',async()=>{
  const data=await dataPromise,model=new RoomProgression(data);

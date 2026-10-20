@@ -4,7 +4,10 @@ import type { Player, SessionSnapshot } from "../models/GameSession";
 export const SessionErrorCodes = {
   SessionFull: "SESSION_FULL",
   SessionNotFound: "SESSION_NOT_FOUND",
-  InvalidParticipant: "INVALID_PARTICIPANT"
+  InvalidParticipant: "INVALID_PARTICIPANT",
+  RoomNotFound: "ROOM_NOT_FOUND",
+  GameNotPlaying: "GAME_NOT_PLAYING",
+  SubmissionNotAllowed: "SUBMISSION_NOT_ALLOWED"
 } as const;
 
 export type SessionErrorCode =

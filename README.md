@@ -1,6 +1,6 @@
 # 2인 협동 방탈출 HTTP 서버
 
-기준일: **2026-10-19**. 현재 저장소의 코드와 자동 검사 결과를 기준으로 설명합니다. 이전 기획서와 차이가 있으면 현재 요구사항과 데이터 테이블을 우선합니다.
+기준일: **2026-10-20**. 현재 저장소의 코드와 자동 검사 결과를 기준으로 설명합니다. 이전 기획서와 차이가 있으면 현재 요구사항과 데이터 테이블을 우선합니다.
 
 Node.js / TypeScript 서버가 두 참가자의 세션과 진행 상태를 소유합니다. 시작할 때 `data/` CSV를 한 번 읽어 검증·클래스 변환하고, 접속한 Unity 클라이언트에 같은 메모리 원본을 전달합니다. 퍼즐 입력은 서버가 슬롯 정답과 비교하며 다음 공간은 누적 해금합니다. 게임 API의 실제 통신은 **HTTP + Google Protobuf 바이너리**입니다. 운영 확인 `/health`와 계약 `/openapi.json`은 JSON입니다.
 
@@ -190,13 +190,13 @@ npm.cmd test
 npm.cmd run csv:validate
 ```
 
-서버 빌드와 **142개 자동 검사 통과**, CSV **23개·오류 0·경고 0**, 모든 **2,861개 셀**의 클래스 변환·전송 왕복 보존을 확인했습니다. 검사에는 세션·HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델을 포함합니다. 콘텐츠 HTTP 검사는 주입한 정수 ms 시계를 진행시켜 10000ms 만료 후 데이터 요청 거절까지 확인합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
+서버 빌드와 **151개 자동 검사 통과**, 현재 CSV **23개·오류 0·경고 52개**를 확인했습니다. 경고는 비활성 앵커를 참조하는 콘텐츠(2199, 2030)이며 오류와 구분해 표시합니다. 모든 **3,121개 셀**을 클래스와 전송 왕복 결과에 대조했습니다. 셀 개수와 경고 없음 자체를 고정 성공 조건으로 사용하지 않습니다. 검사에는 세션·실제 HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델·캐릭터 정수 범위/관계를 포함합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
 
-Unity 저장소의 `Tools/CsvValidation.Tests`는 기존 154개에 문 허가/Protobuf 검사 30개를 추가해 **184개**이며, 별도로 C# 클라 ↔ TS 실제 Protobuf HTTP 검사 **18개**가 통과했습니다. 이번 환경은 .NET 8 SDK가 없어 동일 소스를 임시 net10 프로젝트에서 검사했고 Unity 6.2 .NET Standard 2.1 참조 컴파일도 통과했습니다. 과거 기록에는 실제 HTTP와 격리 Unity Play 33개 통과가 있으나, 이번 수정의 Play 검증은 라이선스 클라이언트 연결 실패로 실행하지 못했습니다. 게임 빌드 UI·렌더링·실제 음성 송수신은 별도 검증입니다.
+Unity 저장소의 `Tools/CsvValidation.Tests` **198개**, `Tools/PlayerSpawn.Tests` **45개**가 현재 소스로 통과했습니다. 화면 제거와 씬 진입 수명 분리, 게임 소유자 취소, 방/플레이어 초기화 실패 시 자리 정리, CSV 캐릭터 값 거부를 포함합니다. 이 환경은 .NET 8 SDK가 없어 같은 소스를 임시 net10 프로젝트에서 실행했습니다. Unity 6.2 참조 환경에서 런타임(Editor 정의)·에디터 도구·Windows 런타임을 분리 컴파일했습니다. 과거 실제 HTTP/격리 Unity Play 18/33개 기록은 이번 변경의 Play 통과로 간주하지 않습니다. 현재 Unity Play·빌드·실제 음성 송수신은 사용자 검토가 필요합니다.
 
 이번 콘텐츠 검토 수정의 의도·파일별 설명·연결 도식은 [콘텐츠 검토 수정 안내](docs/content-review-fixes.md)에 정리했습니다. 기존 퍼즐 ID 디버그 진입점은 PuzzleSubmissionResult를 유지합니다. 새 방 번호 API는 bool 판정을 사용하고 오류는 별도 실패 경로로 전달합니다.
 
-클라이언트의 에디터/테스트/안정화 환경별 접속 config 및 확정된 Google Protobuf 통신 전환 요구사항은 [접속·상호작용·API 작업 범위](docs/client-environment-and-api-plan.md)를 참고합니다. 현재 게임 API는 HTTP+Protobuf입니다. 문·정답 판정과 허가 캐시까지 구현했고 1인칭 플레이어·실제 문/입력 UI 연결은 다음 작업입니다.
+클라이언트의 에디터/테스트/안정화 환경별 접속 config 및 확정된 Google Protobuf 통신 전환 요구사항은 [접속·상호작용·API 작업 범위](docs/client-environment-and-api-plan.md)를 참고합니다. 현재 게임 API는 HTTP+Protobuf입니다. 문·정답 판정과 허가 캐시, 공통 앵커 플레이어 생성과 WASD 정수 이동을 구현했습니다. 실제 문/입력 UI와 마우스 시점은 후속 작업입니다.
 
 도식의 PNG·SVG와 Windows PowerShell/System.Drawing 생성기를 함께 보관합니다.
 
@@ -204,4 +204,14 @@ Unity 저장소의 `Tools/CsvValidation.Tests`는 기존 154개에 문 허가/Pr
 ./scripts/docs/BuildReadmeDiagrams.ps1 -Project Server -OutputDirectory ./docs/images
 ```
 
-[과거 종합 안내](docs/project-overview/README.md), [두 PC 검사](docs/TestGuid.md), [퇴장·음성](docs/session-leave-and-voice.md), [기초 CSV 파서 안내](docs/csv-reader.md)는 상세·과거 기록입니다. 현재 API·데이터·완료 범위는 이 루트 README를 우선합니다. 게임 서버는 음성을 중계하지 않으며 실제 Vivox 송수신·장치 검증은 보류 상태입니다.
+[서버·클라이언트 종합 안내](docs/project-overview/README.md), [두 PC 검사](docs/TestGuid.md), [퇴장·음성](docs/session-leave-and-voice.md), [기초 CSV 파서 안내](docs/csv-reader.md)는 상세·과거 기록입니다. 현재 API·데이터·완료 범위는 이 루트 README를 우선합니다. 게임 서버는 음성을 중계하지 않으며 실제 Vivox 송수신·장치 검증은 보류 상태입니다.
+
+## 10. 2026-10-20 정합성 보완
+
+- 서버와 Unity CSV 23개가 현재 동일한 내용을 사용합니다. 데이터 내용은 이번 코드 수정에서 변경하지 않았습니다. 이후 CSV 갱신은 서버 재시작/Docker 이미지 교체 및 클라 리소스 빌드 반영을 구분합니다.
+- 서버 `CsvCharacterStatRule`은 float32 → 정수 milli 단위로 캐릭터 값을 검사합니다. 속도/가감속 0, 정수 안전 범위, 눈높이·캡슐 지름·단차·FOV 관계를 데이터 등록 전에 거절합니다. Unity는 같은 기준의 `CharacterStatUnits`를 CSV 검사와 플레이어 생성에 공유합니다.
+- 방 API 오류도 `SessionErrorCodes` 공통 정의를 사용합니다. HTTP 상태·Protobuf 숫자·정상 true/false 계약은 유지합니다.
+- Unity는 씬 로드 시작 전까지 요청 화면의 취소를 따르고, 시작 후에는 지속 게임 수명으로 전환합니다. `WorldRuntime`의 실제 로더와 첫 방을 조립한 뒤 플레이어를 생성하며 두 준비 조건을 모두 만족해야 ready를 보고합니다.
+- **B 역할의 R01_LEDPanelPoint는 현재 실제 프리팹에 없습니다.** 공통 스폰과 B 임시 모델의 개발자 미리보기는 가능하지만, 정상 B 방 로드 및 두 참가자 Playing 전체 검증은 콘텐츠 배치 완료 후 진행합니다. 누락을 임의 앵커나 준비 완료로 대체하지 않습니다.
+
+현재 구조·파일별 수정 의도와 Unity 검토 메뉴는 클라이언트 `Docs/EntryConsistency.md` 및 클라이언트 README를 참고합니다.

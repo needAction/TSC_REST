@@ -30,7 +30,7 @@ export interface CsvTableSchema {
 export const TableTags = Object.freeze({
   registry: "registry", room: "room", anchor: "anchor", prefab: "prefab",
   puzzle: "puzzle", slot: "slot", console: "console", sound: "sound",
-  soundLink: "sound-link", config: "config", lock: "lock", arrow: "arrow", wire: "wire"
+  soundLink: "sound-link", config: "config", lock: "lock", arrow: "arrow", wire: "wire", characterStat: "character-stat"
 });
 
 export function freezeSchemas(schemas: readonly CsvTableSchema[]): readonly CsvTableSchema[] {
@@ -123,7 +123,7 @@ export const defaultSchemas = freezeSchemas([
   },
   {
     key: "ID",
-    name: "CHARACTER_STAT",
+    name: "CHARACTER_STAT", tag: TableTags.characterStat,
     columns: [
       {name: "ID", kind: "integer", min: 1},
       {name: "WalkSpeed", kind: "number", min: 0},

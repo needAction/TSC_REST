@@ -178,12 +178,12 @@ export class SessionService {
     if (!progression) throw new Error("Game data is not initialized.");
     const role = this.session.getSnapshot().players.find(player => player.id === participant.playerId)!.role;
     const room = progression.findRoom(role, roomNo);
-    if (!room) return { success: false as const, code: "ROOM_NOT_FOUND" };
-    if (this.session.phase !== "Playing") return { success: false as const, code: "GAME_NOT_PLAYING" };
+    if (!room) return { success: false as const, code: SessionErrorCodes.RoomNotFound };
+    if (this.session.phase !== "Playing") return { success: false as const, code: SessionErrorCodes.GameNotPlaying };
     let value: boolean;
     if (answers !== undefined) {
       const submitted = progression.submit(role, room.puzzleId, answers);
-      if (!submitted.accepted) return { success: false as const, code: "SUBMISSION_NOT_ALLOWED" };
+      if (!submitted.accepted) return { success: false as const, code: SessionErrorCodes.SubmissionNotAllowed };
       value = submitted.correct;
     } else value = progression.checkDoor(role, roomNo);
     return { success: true as const, roomNo, value, doorAllowed: progression.isDoorPermitted(role, roomNo), snapshot: this.getSnapshot() };
