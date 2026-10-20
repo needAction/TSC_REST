@@ -8,7 +8,7 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
     for (const table of context.tagged(TableTags.characterStat)) for (const row of table.rows) {
       context.signal?.throwIfAborted();
       const values = new Map<string, number>();
-      const fields = ["WalkSpeed", "Acceleration", "Deceleration", "EyeHeight", "CapsuleHeight", "CapsuleRadius", "StepOffset", "FOV"];
+      const fields = ["WalkSpeed", "Acceleration", "Deceleration", "EyeHeight", "CapsuleHeight", "CapsuleRadius", "StepOffset", "FOV", "MouseSensitivity", "PitchLimit"];
       let invalid = false;
       for (const field of fields) {
         const raw = finiteNumber(row.get(field));
@@ -19,7 +19,7 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
         } else values.set(field, scaled);
       }
       if (invalid) continue;
-      for (const field of ["MouseSensitivity", "PitchLimit", "InteractDistance", "HeadBob"]) {
+      for (const field of ["InteractDistance", "HeadBob"]) {
         const raw = finiteNumber(row.get(field));
         if (raw === undefined || !Number.isFinite(Math.fround(raw)))
           context.add("InvalidValue", table.name, row.sourceLine, field, row.get(field), "finite float32");
@@ -36,6 +36,8 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
       check("CapsuleHeight", get("CapsuleHeight") >= 2 * get("CapsuleRadius"), "height >= 2 * radius");
       check("StepOffset", get("StepOffset") >= 0 && get("StepOffset") < get("CapsuleHeight"), "0 <= step < height");
       check("FOV", get("FOV") > 0 && get("FOV") < 179000, "0 < FOV < 179 degrees");
+      check("MouseSensitivity", get("MouseSensitivity") > 0 && get("MouseSensitivity") <= 100000, "1..100000 milli multiplier");
+      check("PitchLimit", get("PitchLimit") >= 0 && get("PitchLimit") < 90000, "0 <= PitchLimit < 90 degrees");
     }
   }
 }

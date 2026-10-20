@@ -34,6 +34,9 @@ function cell(sources, sheet, index, column, value) {
 }
 const at = (sheet, column, code) => issue => issue.sheet === sheet && issue.column === column && issue.severity === "Error" && (!code || issue.code === code);
 const checks = [
+  ["마우스 감도 0 거부", x => cell(x, "CHARACTER_STAT", 0, "MouseSensitivity", "0"), at("CHARACTER_STAT", "MouseSensitivity", "InvalidValue")],
+  ["마우스 감도 정수 범위", x => cell(x, "CHARACTER_STAT", 0, "MouseSensitivity", "101"), at("CHARACTER_STAT", "MouseSensitivity", "InvalidValue")],
+  ["시점 상하 회전 범위", x => cell(x, "CHARACTER_STAT", 0, "PitchLimit", "90"), at("CHARACTER_STAT", "PitchLimit", "InvalidValue")],
   ["캐릭터 정지 속도 거부", x => cell(x, "CHARACTER_STAT", 0, "WalkSpeed", "0"), at("CHARACTER_STAT", "WalkSpeed", "InvalidValue")],
   ["캐릭터 가속도 0 거부", x => cell(x, "CHARACTER_STAT", 0, "Acceleration", "0"), at("CHARACTER_STAT", "Acceleration", "InvalidValue")],
   ["캐릭터 감속도 0 거부", x => cell(x, "CHARACTER_STAT", 0, "Deceleration", "0"), at("CHARACTER_STAT", "Deceleration", "InvalidValue")],
