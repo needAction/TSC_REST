@@ -34,6 +34,9 @@ function cell(sources, sheet, index, column, value) {
 }
 const at = (sheet, column, code) => issue => issue.sheet === sheet && issue.column === column && issue.severity === "Error" && (!code || issue.code === code);
 const checks = [
+  ["프리팹 기능 ID 참조", x => cell(x, "PREFAB", 1, "Components", "99999"), at("PREFAB", "Components", "MissingReference")],
+  ["프리팹 기능 ID 중복", x => cell(x, "PREFAB", 1, "Components", "14001|14001"), at("PREFAB", "Components", "DuplicateKey")],
+  ["프리팹 기능 ID 형식", x => cell(x, "PREFAB", 1, "Components", "14001||14005"), at("PREFAB", "Components", "InvalidValue")],
   ["마우스 감도 0 거부", x => cell(x, "CHARACTER_STAT", 0, "MouseSensitivity", "0"), at("CHARACTER_STAT", "MouseSensitivity", "InvalidValue")],
   ["마우스 감도 정수 범위", x => cell(x, "CHARACTER_STAT", 0, "MouseSensitivity", "101"), at("CHARACTER_STAT", "MouseSensitivity", "InvalidValue")],
   ["시점 상하 회전 범위", x => cell(x, "CHARACTER_STAT", 0, "PitchLimit", "90"), at("CHARACTER_STAT", "PitchLimit", "InvalidValue")],
@@ -119,7 +122,7 @@ test("23개 클래스의 모든 필드가 원본 CSV 값을 보존한다", async
     for (let i = 0; i < rows.length; i++) for (const column of schema.columns) {
       const property = column.name === "FOV" ? "fov" : column.name.replaceAll("ID", "Id").replace(/^./, text => text.toLowerCase());
       const raw = document.rows[i].get(column.name), value = rows[i][property];
-      if (Array.isArray(value)) assert.deepEqual(value, raw === "" || (schema.name === "REGISTRY" && raw === "-") ? [] : raw.split(",").map(value => value.trim()));
+      if (Array.isArray(value)) assert.deepEqual(value, raw === "" || (schema.name === "REGISTRY" && raw === "-") ? [] : schema.name === "PREFAB" && column.name === "Components" ? raw.split("|").map(value => Number(value.trim())) : raw.split(",").map(value => value.trim()));
       else if (column.optional && column.kind !== "text" && raw === "") assert.equal(value, null);
       else if (column.values?.join(",") === "Y,N") assert.equal(value, raw === "Y");
       else if (column.kind !== "text") assert.equal(value, Number(raw));

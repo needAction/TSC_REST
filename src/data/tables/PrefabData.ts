@@ -7,12 +7,14 @@ export class PrefabData {
   readonly id: number;
   readonly path: string;
   readonly group: string;
+  readonly components: readonly number[];
 
   constructor(row: CsvRow) {
     const value = new CsvRowReader(row, PrefabData.table.sheetName);
     this.id = value.integer("ID");
     this.path = value.text("Path");
     this.group = value.text("Group");
+    this.components = value.idList("Components", "|");
     Object.freeze(this);
   }
 }

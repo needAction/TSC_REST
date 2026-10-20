@@ -6,6 +6,7 @@ import type { ICsvValidationRule } from "./CsvValidation";
 import { CsvReferenceRule, CsvSchemaRule } from "./CsvTableRules";
 import { CsvPuzzleRule, CsvRoomRule, CsvValueRelationRule } from "./CsvGameRules";
 import { CsvCharacterStatRule } from "./CharacterStatRule";
+import { CsvPrefabComponentRule } from "./PrefabComponentRule";
 
 // CSV를 다시 읽지 않고 전달받은 메모리 데이터만 검사합니다.
 export class CsvValidator {
@@ -13,7 +14,7 @@ export class CsvValidator {
   readonly #rules: readonly ICsvValidationRule[];
   constructor(schemas: readonly CsvTableSchema[] = defaultSchemas, additionalRules: readonly ICsvValidationRule[] = []) {
     this.#schemas = freezeSchemas(schemas);
-    this.#rules = Object.freeze([new CsvSchemaRule(), new CsvReferenceRule(), new CsvRoomRule(), new CsvPuzzleRule(), new CsvValueRelationRule(), new CsvCharacterStatRule(), ...additionalRules]);
+    this.#rules = Object.freeze([new CsvSchemaRule(), new CsvReferenceRule(), new CsvRoomRule(), new CsvPuzzleRule(), new CsvValueRelationRule(), new CsvCharacterStatRule(), new CsvPrefabComponentRule(), ...additionalRules]);
   }
   validate(data: CsvDataSet, signal?: AbortSignal): CsvValidationReport {
     signal?.throwIfAborted();

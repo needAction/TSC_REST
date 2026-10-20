@@ -190,15 +190,15 @@ npm.cmd test
 npm.cmd run csv:validate
 ```
 
-서버 빌드와 **154개 자동 검사 통과**, 현재 서버 CSV **23개·오류 0·경고 52개**를 확인했습니다. 경고는 비활성 앵커를 참조하는 콘텐츠(2199, 2030)이며 오류와 구분해 표시합니다. 모든 **3,121개 셀**을 클래스와 전송 왕복 결과에 대조했습니다. 셀 개수와 경고 없음 자체를 고정 성공 조건으로 사용하지 않습니다. 검사에는 세션·실제 HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델·캐릭터 정수 범위/관계와 MouseSensitivity/PitchLimit 검증을 포함합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
+서버 빌드와 **157개 자동 검사 통과**, 현재 서버 CSV **23개·오류 0·경고 52개**를 확인했습니다. 경고는 비활성 앵커를 참조하는 콘텐츠(2199, 2030)이며 오류와 구분해 표시합니다. 모든 **3,190개 셀**을 클래스와 전송 왕복 결과에 대조했습니다. 셀 개수와 경고 없음 자체를 고정 성공 조건으로 사용하지 않습니다. 검사에는 세션·실제 HTTP·만료·타이머·설정·Protobuf·배포 도구·CSV·진행 모델·캐릭터 정수 범위/관계와 MouseSensitivity/PitchLimit 검증을 포함합니다. 클라우드 배포 검사는 대역을 사용하므로 실제 클라우드 성공을 뜻하지 않습니다.
 
-Unity 저장소의 `Tools/CsvValidation.Tests` **201개**, `Tools/PlayerSpawn.Tests` **72개**가 최신 클라이언트 CSV로 통과했습니다. 화면 제거와 씬 진입 수명 분리, 게임 소유자 취소, 방/플레이어 초기화 실패 시 자리 정리, CSV 캐릭터 값 거부와 정수 시점/조작 상태를 포함합니다. 이 환경은 .NET 8 SDK가 없어 같은 소스를 임시 net10 프로젝트에서 실행했습니다. Unity 6.2 참조 환경에서 런타임(Editor 정의)·에디터 도구·Windows 런타임을 분리 컴파일했습니다. 과거 실제 HTTP/격리 Unity Play 18/33개 기록은 이번 변경의 Play 통과로 간주하지 않습니다. 현재 Unity Play·빌드·실제 음성 송수신은 사용자 검토가 필요합니다.
+Unity 저장소의 `Tools/CsvValidation.Tests` **234개**, `Tools/PlayerSpawn.Tests` **72개**가 최신 클라이언트 CSV로 통과했습니다. 화면 제거와 씬 진입 수명 분리, 게임 소유자 취소, 방/플레이어 초기화 실패 시 자리 정리, CSV 캐릭터 값 거부와 정수 시점/조작 상태를 포함합니다. 이 환경은 .NET 8 SDK가 없어 같은 소스를 임시 net10 프로젝트에서 실행했습니다. Unity 6.2 참조 환경에서 런타임(Editor 정의)·에디터 도구·Windows 런타임을 분리 컴파일했습니다. 과거 실제 HTTP/격리 Unity Play 18/33개 기록은 이번 변경의 Play 통과로 간주하지 않습니다. 현재 Unity Play·빌드·실제 음성 송수신은 사용자 검토가 필요합니다.
 
 이번 콘텐츠 검토 수정의 의도·파일별 설명·연결 도식은 [콘텐츠 검토 수정 안내](docs/content-review-fixes.md)에 정리했습니다. 기존 퍼즐 ID 디버그 진입점은 PuzzleSubmissionResult를 유지합니다. 새 방 번호 API는 bool 판정을 사용하고 오류는 별도 실패 경로로 전달합니다.
 
 클라이언트의 에디터/테스트/안정화 환경별 접속 config 및 확정된 Google Protobuf 통신 전환 요구사항은 [접속·상호작용·API 작업 범위](docs/client-environment-and-api-plan.md)를 참고합니다. 현재 게임 API는 HTTP+Protobuf입니다. 문·정답 판정과 허가 캐시, 공통 앵커 플레이어 생성과 WASD 정수 이동, 정수 마우스 시점·공통 조작 잠금·손 모델 벽 끼임 보정을 구현했습니다. 실제 문/입력 UI·Closeup·다음 방 연결은 별도 기능 검토 단위입니다.
 
-클라이언트 Git Pull 이후 ANCHOR_INTERACT / ANCHOR_NONINTERACT / CARD / PREFAB CSV 4개가 서버와 다릅니다. 최신 클라이언트는 3151개 셀·경고 29개이며 서버 데이터와 구분합니다. 이번에는 CSV 원본을 덮어쓰지 않았습니다. 최신 로컬 방 배치 검토는 클라이언트 테스트 A로 수행하고, 온라인 검증 전 서버 번들과의 정합성을 맞춰야 합니다.
+클라이언트 Git Pull 이후 ANCHOR_INTERACT / ANCHOR_NONINTERACT / CARD / PREFAB CSV 4개가 서버와 다릅니다. 최신 클라이언트는 3248개 셀·경고 39개이며 서버 데이터와 구분합니다. 이번에는 CSV 원본을 덮어쓰지 않았습니다. 최신 로컬 방 배치 검토는 클라이언트 테스트 A로 수행하고, 온라인 검증 전 서버 번들과의 정합성을 맞춰야 합니다.
 
 도식의 PNG·SVG와 Windows PowerShell/System.Drawing 생성기를 함께 보관합니다.
 
@@ -210,10 +210,20 @@ Unity 저장소의 `Tools/CsvValidation.Tests` **201개**, `Tools/PlayerSpawn.Te
 
 ## 10. 2026-10-20 정합성 보완
 
-- 서버와 Unity CSV 23개가 현재 동일한 내용을 사용합니다. 데이터 내용은 이번 코드 수정에서 변경하지 않았습니다. 이후 CSV 갱신은 서버 재시작/Docker 이미지 교체 및 클라 리소스 빌드 반영을 구분합니다.
+- 당시 정합성 보완 이후 Git Pull로 서버/클라이언트 CSV 4개에 차이가 있습니다. 현재 배포 데이터를 동일하다고 간주하지 않습니다. 이번 기능 작업은 기존 행·경로를 보존하면서 양쪽 PREFAB에 Components 열만 연결했습니다. 이후 CSV 갱신은 서버 재시작/Docker 이미지 교체 및 클라 리소스 빌드 반영을 구분합니다.
 - 서버 `CsvCharacterStatRule`은 float32 → 정수 milli 단위로 캐릭터 값을 검사합니다. 속도/가감속 0, 정수 안전 범위, 눈높이·캡슐 지름·단차·FOV 관계를 데이터 등록 전에 거절합니다. Unity는 같은 기준의 `CharacterStatUnits`를 CSV 검사와 플레이어 생성에 공유합니다.
 - 방 API 오류도 `SessionErrorCodes` 공통 정의를 사용합니다. HTTP 상태·Protobuf 숫자·정상 true/false 계약은 유지합니다.
 - Unity는 씬 로드 시작 전까지 요청 화면의 취소를 따르고, 시작 후에는 지속 게임 수명으로 전환합니다. `WorldRuntime`의 실제 로더와 첫 방을 조립한 뒤 플레이어를 생성하며 두 준비 조건을 모두 만족해야 ready를 보고합니다.
 - **B 역할의 R01_LEDPanelPoint는 현재 실제 프리팹에 없습니다.** 공통 스폰과 B 임시 모델의 개발자 미리보기는 가능하지만, 정상 B 방 로드 및 두 참가자 Playing 전체 검증은 콘텐츠 배치 완료 후 진행합니다. 누락을 임의 앵커나 준비 완료로 대체하지 않습니다.
 
 현재 구조·파일별 수정 의도와 Unity 검토 메뉴는 클라이언트 `Docs/EntryConsistency.md` 및 클라이언트 README를 참고합니다.
+
+## 11. 데이터 기반 상호작용 선언
+
+[기획 작업자 적용 가이드](docs/DesignerDataTableGuide.md) · [상호작용 테스트 가이드](docs/InteractionTestGuide.md) · [기능별 코드 연결](docs/DataDrivenInteraction.md)
+
+PREFAB.Components를 COMPONENT.ID의 `|` 목록으로 보존하고 양의 정수·중복·외래 키를 검증합니다. 헤더는 필수이며 셀은 비어 있어도 됩니다. InteractDistance는 Unity와 같은 float32 → int32 mm 기준으로 검사합니다. 원본 Asset 엑셀의 PREFAB!B5에서 Components 추출 제외를 해제했으며 기존 CSV 행·경로는 보존했습니다.
+
+클라이언트 첫 단위는 선언 기반 대상 탐색·강조·Closeup입니다. 정답 입력 UI·문 동작·다음 방 연결을 완성한 변경은 아닙니다. 새 기능은 개발자가 공통 처리기를 등록하고 기획자가 기존 기능을 데이터로 조합합니다. 원본 Excel 73행과 클라이언트 PREFAB 76행 및 기존 경로 차이는 먼저 정리해야 전체 자동 추출을 안전하게 적용할 수 있습니다.
+
+이번 검증: 서버 157개, 클라이언트 공통 234개·플레이어 72개, Unity 상호작용 21개 및 에디터/Windows 분리 컴파일. 실제 마우스 조작은 사용자 검토 항목입니다. Unity 검사는 임시 씬에서 수행하며 원본 방 프리팹을 수정하지 않습니다.

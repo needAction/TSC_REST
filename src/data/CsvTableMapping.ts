@@ -38,5 +38,13 @@ export class CsvRowReader {
     const value = this.text(column);
     return Object.freeze(value === "" || (dashMeansEmpty && value === "-") ? [] : value.split(",").map(item => item.trim()));
   }
+  idList(column: string, separator: string): readonly number[] {
+    const value = this.text(column);
+    return Object.freeze(value === "" ? [] : value.split(separator).map(item => {
+      const id = int32(item.trim());
+      if (id === undefined || id <= 0) throw this.error(column, "Expected positive int32 IDs.");
+      return id;
+    }));
+  }
   private error(column: string, reason: string): Error { return new Error(`CSV mapping: ${this.sheet}.csv:${this.row.sourceLine} [${column}] ${reason}`); }
 }

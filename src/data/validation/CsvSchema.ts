@@ -28,7 +28,7 @@ export interface CsvTableSchema {
 
 // 검증기는 파일명 대신 역할을 사용합니다. 실제 CSV명은 아래 정의와 각 데이터 클래스의 table에서 연결합니다.
 export const TableTags = Object.freeze({
-  registry: "registry", room: "room", anchor: "anchor", prefab: "prefab",
+  component: "component", registry: "registry", room: "room", anchor: "anchor", prefab: "prefab",
   puzzle: "puzzle", slot: "slot", console: "console", sound: "sound",
   soundLink: "sound-link", config: "config", lock: "lock", arrow: "arrow", wire: "wire", characterStat: "character-stat"
 });
@@ -155,7 +155,7 @@ export const defaultSchemas = freezeSchemas([
   },
   {
     key: "ID",
-    name: "COMPONENT",
+    name: "COMPONENT", tag: "component",
     columns: [
       {name: "ID", kind: "integer", min: 1},
       {name: "Script", kind: "text"},
@@ -231,6 +231,7 @@ export const defaultSchemas = freezeSchemas([
       {name: "ID", kind: "integer", min: 1},
       {name: "Path", kind: "text"},
       {name: "Group", kind: "text"},
+      {name: "Components", kind: "text", optional: true},
     ],
   },
   {

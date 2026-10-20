@@ -8,7 +8,7 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
     for (const table of context.tagged(TableTags.characterStat)) for (const row of table.rows) {
       context.signal?.throwIfAborted();
       const values = new Map<string, number>();
-      const fields = ["WalkSpeed", "Acceleration", "Deceleration", "EyeHeight", "CapsuleHeight", "CapsuleRadius", "StepOffset", "FOV", "MouseSensitivity", "PitchLimit"];
+      const fields = ["InteractDistance", "WalkSpeed", "Acceleration", "Deceleration", "EyeHeight", "CapsuleHeight", "CapsuleRadius", "StepOffset", "FOV", "MouseSensitivity", "PitchLimit"];
       let invalid = false;
       for (const field of fields) {
         const raw = finiteNumber(row.get(field));
@@ -19,7 +19,7 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
         } else values.set(field, scaled);
       }
       if (invalid) continue;
-      for (const field of ["InteractDistance", "HeadBob"]) {
+      for (const field of ["HeadBob"]) {
         const raw = finiteNumber(row.get(field));
         if (raw === undefined || !Number.isFinite(Math.fround(raw)))
           context.add("InvalidValue", table.name, row.sourceLine, field, row.get(field), "finite float32");
@@ -28,6 +28,7 @@ export class CsvCharacterStatRule implements ICsvValidationRule {
       const check = (field: string, valid: boolean, rule: string) => {
         if (!valid) context.add("InvalidValue", table.name, row.sourceLine, field, row.get(field), rule);
       };
+      check("InteractDistance", get("InteractDistance") >= 0, "nonnegative int32 mm");
       check("WalkSpeed", get("WalkSpeed") > 0 && get("WalkSpeed") <= 100000, "1..100000 mm/s");
       for (const field of ["Acceleration", "Deceleration"])
         check(field, get(field) > 0 && get(field) <= 1000000, "1..1000000 mm/s2");
