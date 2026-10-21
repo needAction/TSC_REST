@@ -2,19 +2,21 @@
 
 이 문서는 사용자님 PC에서 기존 `deploy-cloud.cmd`를 실행하여 현재 EC2에 배포하는 순서를 설명합니다. 서버 프로젝트를 EC2에 직접 복사하거나 Git에 올린 뒤 받을 필요는 없습니다.
 
+사용자님의 현재 AWS 프로젝트는 신규 가입 환경에서 시드니 리전에 할당되었습니다. 이번 테스트는 무료 플랜과 남은 크레딧·유효기간 안에서 진행하며 시드니를 사용합니다. 플랜 업그레이드나 고급 기능 활성화를 수행하지 않습니다. 이 프로젝트의 리전 제한은 일반 AWS 계정의 리전 선택과 구분해야 합니다. [AWS 프로젝트 리전 안내](https://docs.aws.amazon.com/accounts/latest/reference/project-regions.html)
+
 ## 1. 현재 대상과 실행 위치
 
 | 항목 | 현재 설정 |
 |---|---|
 | AWS 리전 | 아시아 태평양(시드니), ap-southeast-2 |
-| 인스턴스 | i-0966f0379c3e46fba / t3.micro |
+| 인스턴스 | i-0175abaed85067b10 / t3.micro |
 | 운영체제 | Amazon Linux 2023, x86_64 |
-| 서버 공인 IP | 3.107.80.28 |
+| 서버 공인 IP | 32.236.55.218 |
 | SSH 계정 | ec2-user |
 | PC의 SSH 별칭 | escape-cloud |
 | PC의 변환한 키 파일 | C:/Users/m/Desktop/TSC_SERVER.pem |
-| 게임 서버 주소 | http://3.107.80.28:3000 |
-| 상태 확인 주소 | http://3.107.80.28:3000/health |
+| 게임 서버 주소 | http://32.236.55.218:3000 |
+| 상태 확인 주소 | http://32.236.55.218:3000/health |
 
 아래 명령은 별도 표시가 없으면 **사용자님 PC의 PowerShell**에서 실행합니다. `deploy-cloud.cmd`는 서버 프로젝트에 들어 있습니다. PuTTY 안에서 이 파일을 실행하는 방식이 아닙니다.
 
@@ -48,7 +50,7 @@ SSH 접속용 TCP 22도 배포 PC에 허용되어 있어야 합니다. Docker �
 
 ```sshconfig
 Host escape-cloud
-    HostName 3.107.80.28
+    HostName 32.236.55.218
     User ec2-user
     IdentityFile C:/Users/m/Desktop/TSC_SERVER.pem
     IdentitiesOnly yes
@@ -93,7 +95,7 @@ BIND_ADDRESS=0.0.0.0
 HOST_PORT=3000
 CONTAINER_PORT=3000
 RESTART_POLICY=unless-stopped
-PUBLIC_HEALTH_URL=http://3.107.80.28:3000/health
+PUBLIC_HEALTH_URL=http://32.236.55.218:3000/health
 HEALTH_TIMEOUT_MS=60000
 HEALTH_INTERVAL_MS=500
 HEALTH_REQUEST_TIMEOUT_MS=10000
@@ -158,7 +160,7 @@ npm.cmd run docker:cloud
 ```powershell
 docker --host ssh://escape-cloud ps
 docker --host ssh://escape-cloud logs --tail 80 escape-server-cloud
-Invoke-RestMethod -Uri 'http://3.107.80.28:3000/health' -TimeoutSec 10
+Invoke-RestMethod -Uri 'http://32.236.55.218:3000/health' -TimeoutSec 10
 ```
 
 확인할 결과는 컨테이너의 `Up` 상태, `3000` 포트 연결, 서버 시작 로그, 상태 응답의 `status = ok`입니다. `/health`는 JSON 상태 응답이며 게임 API의 Protobuf 통신과 구분됩니다.
@@ -197,7 +199,7 @@ Invoke-RestMethod -Uri 'http://3.107.80.28:3000/health' -TimeoutSec 10
 | Development Build | testBuild |
 | 일반 빌드 | stableBuild |
 
-이번 클라우드 테스트는 **Development Build**를 사용하고 `testBuild.serverBaseUrl`을 `http://3.107.80.28:3000`으로 지정합니다. 로컬/LAN용 프로젝트 설정을 유지하려면 빌드를 별도 폴더에 만든 후 생성물의 `<실행파일명>_Data/StreamingAssets/Configuration/connection.json`에서 testBuild 주소를 바꿀 수 있습니다. 파일을 수정할 때 실행 중인 클라이언트는 종료합니다.
+이번 클라우드 테스트는 **Development Build**를 사용하고 `testBuild.serverBaseUrl`을 `http://32.236.55.218:3000`으로 지정합니다. 로컬/LAN용 프로젝트 설정을 유지하려면 빌드를 별도 폴더에 만든 후 생성물의 `<실행파일명>_Data/StreamingAssets/Configuration/connection.json`에서 testBuild 주소를 바꿀 수 있습니다. 파일을 수정할 때 실행 중인 클라이언트는 종료합니다.
 
 두 PC에 exe만 복사하지 말고 빌드 폴더 전체를 전달합니다. 두 PC 모두 클라우드 주소가 지정된 새 빌드를 실행합니다. 먼저 한 명이 입장하면 상대를 기다리고, 두 명이 참가하여 씬 준비를 완료하면 플레이가 가능해야 합니다. 첫 방 생성·이동·상호작용과 서버 로그를 확인합니다. 두 PC가 다른 네트워크라면 각각의 공인 IP가 보안 그룹에 허용되어 있어야 합니다.
 
@@ -206,12 +208,12 @@ Invoke-RestMethod -Uri 'http://3.107.80.28:3000/health' -TimeoutSec 10
 ## 9. 현재 준비 상태 — 2026-10-21
 
 - 키 권한 수정 후 실제 SSH 접속 성공.
-- Docker 원격 API 연결 성공: EC2 Linux/amd64, Docker Engine 25.0.16.
+- 새 EC2의 Linux Docker 엔진 원격 연결 성공.
 - SSH 별칭·클라우드 환경 파일 설정 및 `--plan` 확인 완료.
-- EC2에서 TypeScript·이미지 빌드 성공. 이미지 ID: `sha256:ee6c998ad3cc8daa0536343e9a88ccb0411078391de28bd0527468477c3bac9d`.
+- 새 EC2에서 TypeScript·이미지 빌드 성공. 이미지 ID: `sha256:0d1277af9ca634779cd1105ec7286d157352b1f003df4a3c21c4d325fc916c19`.
 - 기존 공통 배포 도구로 `escape-server-cloud` 컨테이너 실행 및 서버 시작 로그 확인.
-- EC2 호스트에서 `http://127.0.0.1:3000/health` 요청 결과 `{"status":"ok"}` 확인.
-- TCP 3000 보안 그룹 미설정 상태에서 공개 상태 검사는 60,000ms 제한으로 실패했습니다. 컨테이너는 실행 상태로 남습니다. 규칙을 저장한 후 PC에서 공개 주소의 `/health`를 다시 확인해야 합니다.
+- 기존 배포 도구에서 새 컨테이너 내부 `/health`와 PC에서 공개 주소 `http://32.236.55.218:3000/health`의 응답이 모두 `status=ok`임을 확인했습니다.
+- 도구 종료 코드 0과 `[배포 완료]` 출력 확인. 새 인스턴스에는 SSH 22·게임 TCP 3000 규칙이 설정되어 있습니다.
 - 두 PC의 클라우드 접속용 빌드 생성·실행 검사는 아직 진행하지 않았습니다.
 
 기존 도구의 코드 역할과 설정 전체 항목은 [Docker 배포 도구 설명](docker-deployment.md)을 참고하십시오.
