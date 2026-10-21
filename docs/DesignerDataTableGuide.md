@@ -2,7 +2,7 @@
 
 기준: 2026-10-20. 코드에 새 오브젝트 이름이나 방별 조건을 추가하는 대신 **기존 기능을 데이터로 선택하고 연결**하는 작업 방법입니다.
 
-현재 이번 기능 단위는 **좌클릭 대상 탐색·강조·Closeup 패널 열기/닫기**입니다. 정답 입력 컨트롤·API 호출·문 개폐와 실제 다음 방 이동은 후속 단위입니다. 표에 `DialLock`이나 `Door`가 있다고 이 후속 기능까지 완성된 것은 아닙니다.
+현재 완료한 범위는 **좌클릭 대상 탐색·강조·Closeup과 데이터 기반 정답 입력 UI·기존 Protobuf API 연결**입니다. 문 개폐와 실제 다음 방 이동은 후속 단위입니다. 새 정답 기능의 상세 규칙과 검사는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 따릅니다.
 
 ## 1. 먼저 이해할 연결 구조
 
@@ -64,8 +64,8 @@ COMPONENT의 현재 정의와 구현 범위:
 |---|---|---|---|
 | 14001 | Interactable | HighlightColor=Yellow | 대상 탐색·시선 강조 |
 | 14002 | CloseUpUI | CamOffset=0,0.3,-0.5 | 전용 UI 패널과 모델 미리보기, 이동·시점 잠금 |
-| 14003 | DialLock | - | 기능 선언 인식. 실제 다이얼·정답 UI는 후속 |
-| 14004 | ButtonConsole | - | 기능 선언 인식. 실제 버튼 입력 UI는 후속 |
+| 14003 | DialLock | - | 숫자·문자·색 다이얼 입력 UI와 정답 요청 |
+| 14004 | ButtonConsole | - | 버튼 순서 입력 UI와 정답 요청 |
 | 14005 | Door | - | 기능 선언 인식. 허가 요청·개폐는 후속 |
 | 14006 | LetterSign | - | 메타데이터 인식. 별도 표시 동작은 후속 |
 | 14007 | ScreenText | - | 메타데이터 인식. 별도 표시 동작은 후속 |
@@ -76,7 +76,7 @@ COMPONENT의 현재 정의와 구현 범위:
 - CloseUpUI·Door·DialLock·ButtonConsole에는 Interactable이 필요합니다. DialLock·ButtonConsole에는 CloseUpUI도 필요합니다.
 - 같은 프리팹에 같은 Script를 가진 서로 다른 COMPONENT 행을 중복 연결할 수 없습니다.
 - Script는 등록된 이름과 대소문자까지 맞춥니다. 객체 이름·Group·ID 범위로 기능을 추측하지 않습니다.
-- `Params`는 `Key=Value;Key=Value` 형식입니다. 키 중복은 허용하지 않습니다. 현재 실제로 사용하는 키는 아래 두 가지입니다.
+- `Params`는 `Key=Value;Key=Value` 형식입니다. 키 중복은 허용하지 않습니다. 현재 Params에서 실제로 사용하는 키는 아래 두 가지입니다. 입력 선택지는 LOCK/CONSOLE 컬럼에서 별도로 읽습니다.
 
 | 설정 | 입력 의미 | 예시 / 제한 |
 |---|---|---|
@@ -101,7 +101,7 @@ ID,RoomNo,PlayerType,AnchorID,PrefabID,Active
 | PrefabID | PREFAB.ID를 참조합니다. COMPONENT.ID를 넣지 않습니다. |
 | Active | Y=배치 대상으로 사용, N=비활성. N인 입력 대상을 다른 테이블이 참조하면 경고가 날 수 있습니다. |
 
-현재 R01의 활성 상호작용은 2002 문입니다. **2030 다이얼 앵커는 N**이며 연결된 프리팹 13045의 Components도 비어 있습니다. 따라서 지금 표 그대로 다이얼 Closeup이 나타나지 않는 것은 정상입니다. 단순히 2030을 Y로 바꾸는 것만으로 끝나지 않습니다. 실물 모델·앵커·Collider·Components 연결과 후속 입력 UI 구현을 함께 확인해야 합니다.
+현재 R01의 활성 상호작용은 2002 문입니다. **2030 다이얼 앵커는 N**이며 연결된 프리팹 13045의 Components도 비어 있습니다. 따라서 지금 표 그대로 다이얼 Closeup이 나타나지 않는 것은 정상입니다. 단순히 2030을 Y로 바꾸는 것만으로 끝나지 않습니다. 실물 모델·앵커·Collider·Components 연결과 정답 입력 테이블 연결을 함께 확인해야 합니다.
 
 `ANCHOR_NONINTERACT`에 Interactable 기능을 연결해도 이 Factory는 클릭 대상을 만들지 않습니다. 클릭 대상은 활성 `ANCHOR_INTERACT`에 선언합니다. 단순 배경과 플레이어 생성 위치는 기존 비상호작용/스폰 경로를 유지합니다.
 
@@ -148,7 +148,7 @@ CloseUpOpenMs, HeadBob 등 표에 존재하는 모든 컬럼이 이번 기능에
 
 ## 7. 정답과 문을 연결할 때 준비할 데이터
 
-아래 데이터 구조와 서버 규칙은 존재합니다. **실제 입력 UI와 문 동작 연결은 이번 단위 이후**입니다.
+아래 데이터 구조와 서버 규칙은 존재합니다. **정답 입력 UI 연결은 추가 완료했으며 문 동작은 후속**입니다.
 
 ```text
 ROOM_A / ROOM_B.PuzzleID → PUZZLE.ID
@@ -180,3 +180,9 @@ ROOM_A / ROOM_B.Next → 같은 플레이어의 다음 ROOM.ID
 검증 성공은 참조·값 검사가 통과했다는 뜻입니다. 프리팹 모델의 실제 배치·Collider 정합성과 Play 조작, 아직 구현되지 않은 후속 기능까지 모두 통과했다는 뜻은 아닙니다.
 
 구체적인 조작과 항목별 통과 기준은 [상호작용 테스트 가이드](InteractionTestGuide.md)를 따릅니다.
+
+## 정답 입력 API 연결 추가
+
+DialLock·ButtonConsole 입력 UI와 기존 Protobuf API 연결을 추가했습니다. 위 문서의 해당 기능 '후속' 표기는 첫 Closeup 단위 당시 기록이며, 현재 적용 컬럼·입력 방식·검사 절차는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 기준으로 합니다. 문 개폐와 실제 다음 방 연결은 계속 후속 범위입니다.
+
+현재 PREFAB 13079·13080·13081은 다른 작업자분이 추가 중입니다. 정의가 완성되기 전 전체 로컬 검증 실패를 API 연결 실패로 판단하지 않습니다.
