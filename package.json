@@ -23,7 +23,9 @@
     "csv:verify-client": "npm run build && node scripts/verify-csv-client.cjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "test": "npm run build && node --test tests/*.test.cjs"
+    "test": "npm run build && node --test tests/*.test.cjs",
+    "content:generate": "node scripts/generate-content-contract.cjs",
+    "content:check": "node scripts/generate-content-contract.cjs --check"
   },
   "engines": {
     "node": ">=24"

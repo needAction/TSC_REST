@@ -1,5 +1,7 @@
 # 2인 협동 방탈출 HTTP 서버
 
+2026-10-22 갱신: 게임 사운드는 클라이언트 GameFeedback 에셋에서 관리합니다. SOUND·SOUND_LINK는 REGISTRY에서 비활성화하여 서버 데이터 번들 배포 대상에서 제외했습니다. API·Protobuf 계약은 그대로입니다. 기존 CSV와 범용 모델은 호환성을 위해 보존합니다.
+
 기준일: **2026-10-20**. 현재 저장소의 코드와 자동 검사 결과를 기준으로 설명합니다. 이전 기획서와 차이가 있으면 현재 요구사항과 데이터 테이블을 우선합니다.
 
 Node.js / TypeScript 서버가 두 참가자의 세션과 진행 상태를 소유합니다. 시작할 때 `data/` CSV를 한 번 읽어 검증·클래스 변환하고, 접속한 Unity 클라이언트에 같은 메모리 원본을 전달합니다. 퍼즐 입력은 서버가 슬롯 정답과 비교하며 다음 공간은 누적 해금합니다. 게임 API의 실제 통신은 **HTTP + Google Protobuf 바이너리**입니다. 운영 확인 `/health`와 계약 `/openapi.json`은 JSON입니다.
@@ -85,7 +87,7 @@ src/
   infrastructure/timing/       Node 타이머 어댑터
   infrastructure/logging/      stdout JSON 로그 어댑터
   tools/                       CSV 읽기·검증 CLI
-data/                          런타임 CSV 23개
+data/                          원본 CSV 24개 / 활성 등록 14개
 tests/                         Node 자동 검사
 protocol/, scripts/            Protobuf·실행·배포·도식 도구
 ```

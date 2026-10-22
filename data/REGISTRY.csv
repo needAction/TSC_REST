@@ -13,5 +13,5 @@
 "18009","PUZZLE","SILENT_Puzzle_Datatable.xlsx","ROOM_A, ROOM_B","SolverRoom","ANCHOR_INTERACT","4","Y","Y"
 "18010","PUZZLE_SLOT","SILENT_Puzzle_Datatable.xlsx","PUZZLE","PuzzleID","-","5","Y","Y"
 "18011","COLOR_LETTER","SILENT_Puzzle_Datatable.xlsx","PUZZLE","PuzzleID","ANCHOR_NONINTERACT","5","Y","Y"
-"18016","SOUND","SILENT_Sound_Datatable.xlsx","-","-","-","2","N","Y"
-"18017","SOUND_LINK","SILENT_Sound_Datatable.xlsx","SOUND","SoundID","ROOM_A, ROOM_B, PREFAB, ANCHOR_INTERACT, ANCHOR_NONINTERACT, PUZZLE","6","N","Y"
+"18016","SOUND","SILENT_Sound_Datatable.xlsx","-","-","-","2","N","N"
+"18017","SOUND_LINK","SILENT_Sound_Datatable.xlsx","SOUND","SoundID","ROOM_A, ROOM_B, PREFAB, ANCHOR_INTERACT, ANCHOR_NONINTERACT, PUZZLE","6","N","N"
