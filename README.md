@@ -53,6 +53,7 @@ local/test 실행기는 환경 파일 읽기 → TypeScript 빌드 → 설정 �
 | HTTP 라우터 | `createSessionHttpServer`: 메서드·경로를 Controller 작업에 연결 |
 | Controller | `SessionController`: 요청 연결과 제출 본문 제한 |
 | 공통 응답 | `ParticipantHttpHandler`: 토큰 헤더, no-store, 도메인 결과 → HTTP 상태 |
+| 접근 로그 | `HttpAccessLogger`·`HttpRequestLogContext`: 요청 ID·최종 게임 판정·HTTP 완료/중단을 수집하고 `ILogSink`로 출력 |
 | 서비스 | `SessionService`: 인증 후 세션·진행 모델을 조정하는 Facade |
 | 세션 모델 | `GameSession`: A/B 자리, ready, Waiting/Loading/Playing 스냅샷 |
 | 진행 모델 | `RoomProgression`: CSV 기반 Solver·슬롯 비교·누적 해금 |
@@ -74,11 +75,13 @@ src/
   config/                      환경설정 검증
   common/csv/                  CSV 파서·Loader·문서/행
   common/timing/               주기 작업·스케줄러 포트
+  common/logging/              전송과 독립적인 구조화 로그 출력 계약
   data/                        원본·등록소·매핑·전송 묶음
     validation/                스키마·공통 및 게임 관계 검사
     tables/                    23개 행 모델·공통 Room/Anchor·CsvGameData
   infrastructure/data/         UTF-8 파일 입력·loadGameData
   infrastructure/timing/       Node 타이머 어댑터
+  infrastructure/logging/      stdout JSON 로그 어댑터
   tools/                       CSV 읽기·검증 CLI
 data/                          런타임 CSV 23개
 tests/                         Node 자동 검사
@@ -233,3 +236,17 @@ PREFAB.Components를 COMPONENT.ID의 `|` 목록으로 보존하고 양의 정수
 [정답 입력 연결·기획 적용·코드 해설·검사](docs/AnswerApiConnection.md). 기존 Protobuf 방 번호 API의 계약은 변경하지 않고 Unity 입력 UI를 공개 IRoomAnswerService에 연결했습니다. UI는 토큰·내부 예외·HTTP·생성 메시지를 참조하지 않으며 정상 true/false와 실패 코드를 구분합니다. 서버 코드·CSV·엑셀·프리팹 변경은 없습니다.
 
 확인: 서버 157개, 정답 분리 39개, 이전 정상 클라이언트 데이터 회귀 273개, 실제 C#·서버 Protobuf HTTP 22개, Unity UI·로컬 서비스 9개, 에디터/Windows 분리 컴파일 통과. 최신 클라이언트의 작성 중인 PREFAB 13079·13080·13081 누락으로 전체 등록은 별도이며 해당 데이터를 임의 수정하지 않았습니다. 실제 마우스 조작·빌드와 문 개폐·다음 방 연결은 다음 검토 범위입니다.
+
+## 13. HTTP 접근 로그 — 2026-10-22
+
+[구현 위치·설계 의도·로그 필드·클라우드 조회·후속 패킷 추적 안내](docs/http-access-logging.md).
+
+모든 HTTP 요청을 요청당 JSON 한 줄로 stdout에 기록합니다. 입장·정답·문뿐 아니라 ready·조회·heartbeat·데이터·퇴장·health·미등록 경로도 포함합니다. HTTP 200의 오답/잠긴 문을 각각 incorrect/locked로 구분하며, 요청 ID·참가 역할·방 번호·실패 코드·해금 목록·소요 시간·응답 완료/중단을 기록합니다. 참가 토큰·답 문자열·원본 본문·URL 쿼리는 기록하지 않습니다.
+
+라우터가 요청별 Context와 응답 이벤트 Observer를 연결하고, Controller/Protobuf 응답 경계에서 필요한 필드만 수집합니다. 도메인 게임 판정은 변경하지 않았습니다. 공통 ILogSink와 stdout Adapter를 분리해 후속 패킷 처리 단계별 이벤트를 추가할 경계를 마련했습니다. 수신·디코딩·인증·판정별 상세 이벤트와 영속 로그 큐는 후속 범위입니다.
+
+TypeScript 빌드와 서버 검사 **164개(신규 접근 로그 7개 포함)**가 통과했습니다. 클라우드는 기존 deploy-cloud.cmd로 새 이미지를 배포한 뒤 다음 명령으로 확인합니다. 이번 구현에서 실제 클라우드 배포는 수행하지 않았으며, API 계약 변경이 없어 로그 추가만으로 클라이언트를 다시 빌드할 필요는 없습니다.
+
+```powershell
+ssh escape-cloud "docker logs --follow --timestamps --tail 100 escape-server-cloud"
+```

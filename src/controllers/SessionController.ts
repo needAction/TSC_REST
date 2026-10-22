@@ -4,6 +4,7 @@ import { ParticipantHttpHandler } from "./http/ParticipantHttpHandler";
 import { ProtobufHttp, ProtobufRequestError } from "./http/ProtobufHttp";
 import { SessionErrorCode } from "../generated/escape/v1/common";
 import { PuzzleCommandRequest, RoomCommandRequest } from "../generated/escape/v1/game_api";
+import { HttpRequestLogContext } from "./http/HttpRequestLogContext";
 
 export class SessionController {
   constructor(private readonly sessions: SessionService) {}
@@ -15,6 +16,7 @@ export class SessionController {
   async submit(request: IncomingMessage, response: ServerResponse, sessionId: string, puzzleId: number): Promise<void> {
     try {
       const { answers } = await ProtobufHttp.read(request, bytes => PuzzleCommandRequest.decode(bytes));
+      HttpRequestLogContext.find(response)?.setPuzzleCommand(puzzleId, answers.length);
       ProtobufHttp.validateAnswers(answers);
       ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers), "puzzle");
     } catch (error) { this.contentFailure(request, response, error); }
@@ -23,6 +25,7 @@ export class SessionController {
   async room(request: IncomingMessage, response: ServerResponse, sessionId: string, answer: boolean): Promise<void> {
     try {
       const command = await ProtobufHttp.read(request, bytes => RoomCommandRequest.decode(bytes));
+      HttpRequestLogContext.find(response)?.setRoomCommand(command.roomNo, command.answers.length);
       if (!Number.isInteger(command.roomNo) || command.roomNo < 1 || (!answer && command.answers.length !== 0))
         throw new ProtobufRequestError(SessionErrorCode.INVALID_REQUEST);
       ProtobufHttp.validateAnswers(command.answers);

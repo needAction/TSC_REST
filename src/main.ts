@@ -9,6 +9,7 @@ import { ParticipantRegistry } from "./services/ParticipantRegistry";
 import { PeriodicTask } from "./common/timing/PeriodicTask";
 import { NodeIntervalScheduler } from "./infrastructure/timing/NodeIntervalScheduler";
 import { createSessionHttpServer } from "./infrastructure/http/createSessionHttpServer";
+import { HttpAccessLogger } from "./infrastructure/http/HttpAccessLogger";
 import {
   MonotonicMillisecondClock
 } from "./common/MonotonicMillisecondClock";
@@ -29,7 +30,12 @@ async function start(): Promise<void> {
   const sessionService = new SessionService(session, participants, gameData);
   const sessionController = new SessionController(sessionService);
 
-  const server = createSessionHttpServer(sessionController);
+  const accessLogger = new HttpAccessLogger(undefined, token => {
+    const playerId = participants.getPlayerId(token);
+    const player = session.getSnapshot().players.find(item => item.id === playerId);
+    return player ? { sessionId: session.id, playerId: player.id, role: player.role } : undefined;
+  }, clock);
+  const server = createSessionHttpServer(sessionController, accessLogger);
   const expirationTask = new PeriodicTask(
     new NodeIntervalScheduler(),
     config.expirationCheckIntervalMs,

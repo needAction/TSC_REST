@@ -3,6 +3,7 @@ import { GameApiResponse } from "../../generated/escape/v1/game_api";
 import { SessionErrorCode } from "../../generated/escape/v1/common";
 import { PlayerRole, SessionPhase } from "../../generated/escape/v1/session";
 import type { Player, SessionSnapshot } from "../../models/GameSession";
+import { HttpRequestLogContext } from "./HttpRequestLogContext";
 
 export const protobufMediaType = "application/protobuf";
 export type ReplyKind = "joined" | "snapshot" | "completed" | "data" | "puzzle" | "room";
@@ -23,6 +24,7 @@ export class ProtobufRequestError extends Error {
 export class ProtobufHttp {
   static status(code: SessionErrorCode): number { return statuses[code] ?? 500; }
   static write(response: ServerResponse, status: number, body: GameApiResponse): void {
+    HttpRequestLogContext.find(response)?.captureReply(body);
     response.setHeader("Content-Type", protobufMediaType);
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("X-Content-Type-Options", "nosniff");
