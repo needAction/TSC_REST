@@ -83,6 +83,7 @@ export class CsvReferenceRule implements ICsvValidationRule {
     for (const row of registry.rows) {
       context.signal?.throwIfAborted();
       const name = row.get("Sheet"), table = context.find(name);
+      if (isActive(row) && table && !table.schema) context.add("UnknownSchema", registry.name, row.sourceLine, "Sheet", name);
       if (isActive(row) && !table) {
         if (row.get("Required") === "Y") context.add("MissingTable", registry.name, row.sourceLine, "Sheet", name);
         else context.warn("MissingTable", registry.name, row.sourceLine, "Sheet", name);

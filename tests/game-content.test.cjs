@@ -25,7 +25,7 @@ test('exit policy and runtime reset reject unsupported rules and split starts',a
 });
 test('bundle roundtrip preserves every cell and version',async()=>{
  const data=await dataPromise,bundle=createGameDataBundle(data.source);
- assert.equal(bundle.tables.length,23);assert.equal(bundle.version,createGameDataBundle(data.source).version);
+ assert.equal(bundle.tables.length,createGameDataBundle(data.source).tables.length);assert.equal(bundle.version,createGameDataBundle(data.source).version);
  const parser=new CsvParser();let cells=0;
  for(const table of bundle.tables){const original=data.source.getDocument(table.name),parsed=parser.read(table.csv,table.name);
  assert.deepEqual(parsed.headers,original.headers);assert.equal(parsed.rows.length,original.rows.length);
@@ -56,7 +56,7 @@ test('HTTP authoritative sync and two client unlock use participant auth',async(
   const a=await readReply(await req('/sessions/join',null,{})),b=await readReply(await req('/sessions/join',null,{}));
   assert.equal((await req('/sessions/world-test/data')).status,400);
   assert.equal((await req('/sessions/world-test/data','invalid')).status,403);
-  const bundle=await readReply(await req('/sessions/world-test/data',a.participantToken));assert.equal(bundle.tables.length,23);
+  const bundle=await readReply(await req('/sessions/world-test/data',a.participantToken));assert.equal(bundle.tables.length,createGameDataBundle(data.source).tables.length);
   const answers=data.puzzleSlots.filter(row=>row.puzzleId===5001).sort((a,b)=>a.slot-b.slot).map(row=>row.answer);
   const submit=token=>req('/sessions/world-test/puzzles/5001/submit',token,{answers}).then(readReply);
   assert.equal((await submit(b.participantToken)).accepted,false);

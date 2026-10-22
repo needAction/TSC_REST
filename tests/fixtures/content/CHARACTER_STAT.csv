@@ -1,0 +1,3 @@
+"ID","WalkSpeed","Acceleration","Deceleration","MouseSensitivity","PitchLimit","FOV","EyeHeight","CapsuleHeight","CapsuleRadius","StepOffset","InteractDistance","CloseUpOpenMs","HeadBob"
+"17001","3","10","12","1","80","70","1.6","1.8","0.3","0.3","2","350","0.02"
+"17002","4.5","14","16","1","80","70","1.6","1.8","0.3","0.3","2.5","200","0"

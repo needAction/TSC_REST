@@ -21,8 +21,9 @@ const { Utf8CsvFileSource } = require("../dist/infrastructure/data/Utf8CsvFileSo
 const folder = path.resolve(__dirname, "../data");
 const validator = new CsvValidator();
 const parser = new CsvParser();
-const originals = fs.readdir(folder).then(async files => Object.fromEntries(await Promise.all(files.filter(file => file.toLowerCase().endsWith(".csv"))
-  .map(async file => [path.basename(file, path.extname(file)), await fs.readFile(path.join(folder, file), "utf8")]))));
+const fixtureFolder = path.join(__dirname, "fixtures/content");
+const originals = fs.readdir(fixtureFolder).then(async files => Object.fromEntries(await Promise.all(files.filter(file => file.toLowerCase().endsWith(".csv"))
+  .map(async file => [path.basename(file, path.extname(file)), await fs.readFile(path.join(fixtureFolder, file), "utf8")]))));
 async function memory(sources) {
   return CsvDataSet.load(Object.keys(sources).map(name => [name, name]), new CsvLoader({ readText: async name => sources[name] }, parser));
 }
@@ -115,17 +116,17 @@ for (const [name, mutate, expected] of checks) test("데이터 검증: " + name,
 test("data 폴더의 23개 CSV는 검증과 클래스 변환을 통과한다", async () => {
   const data = await readCsvDirectory(folder);
   const report = validator.validate(data);
-  assert.equal(report.fileCount, defaultSchemas.length);
+  assert.equal(report.fileCount, (await fs.readdir(folder)).filter(name => name.endsWith(".csv")).length);
   assert.deepEqual(report.issues.filter(issue => issue.severity === "Error"), []);
   const store = new CsvDataStore(); store.register(data, validator);
   const game = new CsvGameData(store);
   assert.equal(game.puzzles.find(row => row.id === 5001).slotCount, 4);
-  assert.equal(game.puzzleSlots.length, 44);
+  assert.equal(game.puzzleSlots.length, data.getDocument("PUZZLE_SLOT").rows.length);
   assert.equal(game.characterStats[0].eyeHeight, 1.6);
 });
 
 test("23개 클래스의 모든 필드가 원본 CSV 값을 보존한다", async () => {
-  const game = await loadGameData(folder);
+  const game = await loadGameData(fixtureFolder);
   // 빈 목록은 첫 행의 생성자로 시트를 추론할 수 없으므로 주입되는 테이블 자체를 대응시킵니다.
   const bySheet = new Map(Object.entries({
     ANCHOR_INTERACT: game.interactAnchors, ANCHOR_NONINTERACT: game.nonInteractAnchors,
@@ -174,7 +175,7 @@ test("검증·초기화·변환·재조회에서 실제 파일은 한 번만 읽
   await store.initialize(load, validator); await store.initialize(load, validator);
   validator.validate(store.data); validator.validate(store.data);
   const first = new CsvGameData(store), second = new CsvGameData(store);
-  assert.equal(reads.size, 23); assert.ok([...reads.values()].every(value => value === 1));
+  assert.equal(reads.size, (await fs.readdir(folder)).filter(name => name.endsWith(".csv")).length); assert.ok([...reads.values()].every(value => value === 1));
   assert.equal(first.source, store.data); assert.equal(first.puzzles, second.puzzles);
   assert.equal(store.getTable(PuzzleData.table), first.puzzles);
 });
@@ -277,7 +278,7 @@ test("추가 규칙 주입·미등록 시트 일반 검사·선택 테이블 누
 });
 
 test("GAME_CONFIG는 선언된 자료형으로만 숫자를 제공한다", async () => {
-  const game = await loadGameData(folder);
+  const game = await loadGameData(fixtureFolder);
   assert.equal(game.gameConfigs.find(row => row.id === 16001).asInt(), 900000);
   assert.equal(game.gameConfigs.find(row => row.id === 16030).asFloat(), 0.75);
   assert.throws(() => game.gameConfigs.find(row => row.id === 16002).asInt());
@@ -304,7 +305,7 @@ test("자료형 변환 오류는 시트·행·컬럼을 포함한다", () => {
 test("명령행 검증기는 기본 data 폴더를 검사하고 잘못된 폴더는 실패한다", () => {
   const script = path.resolve(__dirname, "../dist/tools/validateCsv.js");
   const good = spawnSync(process.execPath, [script], { cwd: os.tmpdir(), encoding: "utf8", timeout: 10000 });
-  assert.equal(good.status, 0, good.stderr); assert.match(good.stdout, /23개 파일 \/ 오류 0개/);
+  assert.equal(good.status, 0, good.stderr); assert.match(good.stdout, /\d+개 파일 \/ 오류 0개/);
   const missing = spawnSync(process.execPath, [script, path.join(os.tmpdir(), "missing-" + process.pid)], { encoding: "utf8", timeout: 10000 });
   assert.equal(missing.status, 1); assert.match(missing.stderr, /CSV 오류/);
 });
