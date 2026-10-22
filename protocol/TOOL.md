@@ -3,6 +3,18 @@
 계약 원본은 protocol/escape/v1입니다. 이 도구는 생성 메시지를 배포하며,
 Unity 런타임 DLL 설치는 수행하지 않습니다. 현재 게임 API는 Protobuf로 전환되어 있습니다. OpenAPI 호출 바인딩도 생성하며, 새 `npm run api:sync -- --apply`는 기존 생성·교차 검사에 C# 클라이언트/TS 서버 실제 HTTP 검사를 더한 뒤 로컬 배포합니다.
 
+## Swagger 문서 갱신
+
+HTTP 계약 원본은 `protocol/http/openapi.json`, 메시지 원본은 `protocol/escape/v1/*.proto`입니다. 문서용 한글 설명과 proto 설명 모델을 갱신한 뒤 기존 생성 도구로 서버에 반영합니다.
+
+```powershell
+npm.cmd run api:docs:update
+npm.cmd run proto:sync -- --target server --apply
+npm.cmd run api:docs:verify
+```
+
+`/health`와 `/openapi.json`은 `x-codegen-exclude=true`로 문서에만 포함되어 기존 게임 호출 9개를 늘리지 않습니다. 실제 통신 계약 변경 시에는 기존 `api:sync -- --apply`로 Unity까지 생성·검사합니다. 서버 실행 후 `/swagger/`로 조회하며 Protobuf 실행 버튼은 제공하지 않습니다. [상세 사용 안내](../docs/swagger-api-guide.md).
+
 ## 프로젝트 경로 설정
 
 프로젝트 루트의 protocol.projects.example.json을 protocol.projects.local.json으로 복사합니다.

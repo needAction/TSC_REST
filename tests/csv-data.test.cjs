@@ -28,9 +28,20 @@ async function memory(sources) {
 }
 function cell(sources, sheet, index, column, value) {
   const document = parser.read(sources[sheet]);
+  assert.ok(index < document.rows.length, `${sheet} 검사 대상 행이 없습니다. 메모리 검사용 행을 먼저 구성하세요.`);
   const quote = value => '"' + value.replaceAll('"', '""') + '"';
   sources[sheet] = document.headers.map(quote).join(",") + "\n" + document.rows.map((row, i) =>
     document.headers.map(header => quote(i === index && header === column ? value : row.get(header))).join(",")).join("\n");
+}
+// 확장용 빈 시트도 검증할 수 있도록 실제 CSV를 수정하지 않고 메모리 원본에 행을 만듭니다.
+function fixtureRow(sources, sheet, values) {
+  const { headers } = parser.read(sources[sheet]);
+  const quote = value => '"' + String(value).replaceAll('"', '""') + '"';
+  sources[sheet] = headers.map(quote).join(',') + '\n' + headers.map(header => quote(values[header])).join(',');
+}
+function wireLength(sources, value) {
+  fixtureRow(sources, 'WIRE', { AnchorRef: parser.read(sources.ANCHOR_NONINTERACT).rows[0].get('ID'),
+    Color: 'Red', LengthM: value, IsAnswer: 'Y', Port: '1' });
 }
 const at = (sheet, column, code) => issue => issue.sheet === sheet && issue.column === column && issue.severity === "Error" && (!code || issue.code === code);
 const checks = [
@@ -57,12 +68,14 @@ const checks = [
   ["필수 값", x => cell(x, "CARD", 0, "TopMark", ""), at("CARD", "TopMark", "EmptyValue")],
   ["정수 형식", x => cell(x, "CARD", 0, "CardNo", "1.5"), at("CARD", "CardNo", "InvalidValue")],
   ["정수 범위", x => cell(x, "CARD", 0, "ID", "2147483648"), at("CARD", "ID", "InvalidValue")],
-  ["무한대 거부", x => cell(x, "WIRE", 0, "LengthM", "Infinity"), at("WIRE", "LengthM", "InvalidValue")],
-  ["NaN 거부", x => cell(x, "WIRE", 0, "LengthM", "NaN"), at("WIRE", "LengthM", "InvalidValue")],
-  ["16진수 거부", x => cell(x, "WIRE", 0, "LengthM", "0x10"), at("WIRE", "LengthM", "InvalidValue")],
+  ["무한대 거부", x => wireLength(x, "Infinity"), at("WIRE", "LengthM", "InvalidValue")],
+  ["NaN 거부", x => wireLength(x, "NaN"), at("WIRE", "LengthM", "InvalidValue")],
+  ["16진수 거부", x => wireLength(x, "0x10"), at("WIRE", "LengthM", "InvalidValue")],
   ["설정 자료형", x => cell(x, "GAME_CONFIG", 0, "Value", "abc"), at("GAME_CONFIG", "Value", "InvalidValue")],
   ["프리팹 참조", x => cell(x, "ANCHOR_INTERACT", 0, "PrefabID", "99999"), at("ANCHOR_INTERACT", "PrefabID", "MissingReference")],
-  ["앵커 부모 종류", x => cell(x, "ARROW", 0, "AnchorRef", "2030"), at("ARROW", "AnchorRef", "MissingReference")],
+  ["앵커 부모 종류", x => fixtureRow(x, 'ARROW', {
+    AnchorRef: parser.read(x.ANCHOR_INTERACT).rows[0].get('ID'), Order: '1', Dir: 'Up', IsAnswer: 'Y'
+  }), at("ARROW", "AnchorRef", "MissingReference")],
   ["필수 시트 누락", x => delete x.LOCK, issue => issue.sheet === "REGISTRY" && issue.code === "MissingTable" && issue.details.includes("LOCK")],
   ["퍼즐 참조", x => cell(x, "PUZZLE_SLOT", 0, "PuzzleID", "99999"), at("PUZZLE_SLOT", "PuzzleID", "MissingReference")],
   ["슬롯 개수", x => cell(x, "PUZZLE", 0, "SlotCount", "5"), at("PUZZLE", "SlotCount", "SlotCount")],
@@ -113,7 +126,16 @@ test("data 폴더의 23개 CSV는 검증과 클래스 변환을 통과한다", a
 
 test("23개 클래스의 모든 필드가 원본 CSV 값을 보존한다", async () => {
   const game = await loadGameData(folder);
-  const bySheet = new Map(Object.values(game).filter(value => Array.isArray(value) && value.length).map(rows => [rows[0].constructor.table.sheetName, rows]));
+  // 빈 목록은 첫 행의 생성자로 시트를 추론할 수 없으므로 주입되는 테이블 자체를 대응시킵니다.
+  const bySheet = new Map(Object.entries({
+    ANCHOR_INTERACT: game.interactAnchors, ANCHOR_NONINTERACT: game.nonInteractAnchors,
+    ARROW: game.arrows, CARD: game.cards, CHARACTER_STAT: game.characterStats,
+    COLOR_LETTER: game.colorLetters, COMPONENT: game.components, CONSOLE: game.consoles,
+    FORMULA: game.formulas, FRAME: game.frames, GAME_CONFIG: game.gameConfigs,
+    LOCK: game.locks, PAPER: game.papers, PREFAB: game.prefabs, PUZZLE_SLOT: game.puzzleSlots,
+    PUZZLE: game.puzzles, REGISTRY: game.registry, ROOM_A: game.roomsA, ROOM_B: game.roomsB,
+    SOUND_LINK: game.soundLinks, SOUND: game.sounds, TV: game.tvs, WIRE: game.wires
+  }));
   assert.equal(bySheet.size, 23);
   let cells = 0;
   for (const schema of defaultSchemas) {
@@ -132,6 +154,16 @@ test("23개 클래스의 모든 필드가 원본 CSV 값을 보존한다", async
   }
   assert.ok(cells > 0, "every source cell was compared; row counts are content data");
   assert.equal(game.components.find(row => row.id === 14002).params, "CamOffset=0,0.3,-0.5");
+});
+
+test("확장용 WIRE·ARROW는 헤더만 있어도 정상 등록되고 빈 목록으로 주입된다", async () => {
+  const sources = { ...await originals };
+  for (const sheet of ['WIRE', 'ARROW']) sources[sheet] = parser.read(sources[sheet]).headers.join(',') + '\n';
+  const store = new CsvDataStore();
+  assert.equal(store.register(await memory(sources), validator).isValid, true);
+  const game = new CsvGameData(store);
+  assert.deepEqual(game.wires, []);
+  assert.deepEqual(game.arrows, []);
 });
 
 test("검증·초기화·변환·재조회에서 실제 파일은 한 번만 읽는다", async () => {

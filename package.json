@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "api:docs:update": "node scripts/docs/build-swagger-spec.cjs",
+    "api:docs:verify": "npm run build && node scripts/verify-api-docs.cjs",
     "api:verify": "npm run build && node scripts/verify-game-api.cjs",
     "api:sync": "npm run build && node scripts/sync-game-api.cjs",
     "proto:generate": "node scripts/generate-protocol.cjs",
@@ -31,11 +33,13 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@apidevtools/swagger-parser": "13.1.0",
     "@types/node": "^26.6.4",
     "ts-proto": "2.15.0",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "2.14.1"
+    "@bufbuild/protobuf": "2.14.1",
+    "swagger-ui-dist": "5.34.0"
   }
 }

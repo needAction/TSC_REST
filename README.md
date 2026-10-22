@@ -135,7 +135,7 @@ npm.cmd run csv:read -- "D:/경로/테이블.csv"
 
 ## 5. API 계약
 
-게임 API는 `application/protobuf` 바이너리를 사용합니다. 메시지는 `protocol/escape/v1`, HTTP 바인딩은 `protocol/http/openapi.json`이 기준입니다. `/openapi.json`으로 Swagger/OpenAPI 계약을 확인할 수 있습니다. 참가자는 `x-participant-token` 헤더로 인증하고 토큰은 스냅샷에 포함하지 않습니다.
+게임 API는 `application/protobuf` 바이너리를 사용합니다. 메시지는 `protocol/escape/v1`, HTTP 바인딩은 `protocol/http/openapi.json`이 기준입니다. 서버 실행 후 **`http://127.0.0.1:3000/swagger/`** 에서 API 11개(게임 9개·운영 2개)의 한글 설명·인증·매개변수·성공/실패·Protobuf 설명 모델을 볼 수 있습니다. `/openapi.json`은 같은 문서의 원본 응답입니다. 현재 Swagger는 문서 조회용이며 Try it out은 비활성화했습니다. [실행·갱신·코드 연결 안내](docs/swagger-api-guide.md)를 참고합니다. 참가자는 `x-participant-token` 헤더로 인증하고 토큰은 스냅샷에 포함하지 않습니다.
 
 | 메서드 / 경로 | 요청 본문 | GameApiResponse 성공 분기 |
 |---|---|---|

@@ -5,16 +5,22 @@ import { ProtobufHttp } from "../../controllers/http/ProtobufHttp";
 import { SessionErrorCode } from "../../generated/escape/v1/common";
 import { gameApiOpenApi, gameApiOperations } from "../../generated/http/game-api";
 import { HttpAccessLogger } from "./HttpAccessLogger";
+import { SwaggerUiHttpHandler } from "./SwaggerUiHttpHandler";
 
 const routes = gameApiOperations.map(operation => ({ operation,
   expression: new RegExp("^" + operation.path.replace("{sessionId}", "([^/]+)").replace("{puzzleId}", "([1-9][0-9]*)") + "$") }));
 
 // OpenAPI에서 생성한 경로를 사용하고 실제 요청 처리는 Controller에 위임합니다.
 export function createSessionHttpServer(controller: SessionController, accessLogger = new HttpAccessLogger()): Server {
+  const swagger = new SwaggerUiHttpHandler();
   return createServer((request, response) => {
     const log = accessLogger.observe(request, response);
     try {
       const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+      if (request.method === "GET" && (pathname === "/swagger" || pathname.startsWith("/swagger/"))) {
+        log.setRoute("SwaggerUi", "/swagger/{asset}");
+        if (swagger.handle(request.method, pathname, response)) return;
+      }
       if (request.method === "GET" && (pathname === "/health" || pathname === "/openapi.json")) {
         log.setRoute(pathname === "/health" ? "Health" : "OpenApi", pathname);
         response.setHeader("Content-Type", "application/json; charset=utf-8");

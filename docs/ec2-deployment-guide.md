@@ -169,6 +169,8 @@ Invoke-RestMethod -Uri 'http://32.236.55.218:3000/health' -TimeoutSec 10
 
 확인할 결과는 컨테이너의 `Up` 상태, `3000` 포트 연결, 서버 시작 로그, 상태 응답의 `status = ok`입니다. `/health`는 JSON 상태 응답이며 게임 API의 Protobuf 통신과 구분됩니다.
 
+Swagger 코드를 포함한 새 이미지를 배포한 뒤 브라우저에서 `http://32.236.55.218:3000/swagger/`를 열면 API 설명을 확인할 수 있습니다. 별도 포트는 필요하지 않습니다. 현재 문서 조회 전용이며 Protobuf 요청 실행은 지원하지 않습니다. [Swagger 사용·갱신 안내](swagger-api-guide.md)를 참고하십시오.
+
 2026-10-22 추가한 접근 로그 코드를 새 이미지로 배포하면 입장·정답·문 요청의 `http_access` JSON 로그도 표시됩니다. 실시간 조회와 결과 필드 해석은 [서버 접근 로그 안내](http-access-logging.md)를 참고하십시오. 과거 이미지에 이 코드가 자동 반영되지는 않습니다.
 
 ### 실패 위치별 확인

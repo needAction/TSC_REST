@@ -12,6 +12,8 @@ function generateHttpApi(tsOutput, csOutput) {
   const operations = [];
   const names = new Set();
   for (const [route, methods] of Object.entries(spec.paths)) for (const [method, operation] of Object.entries(methods)) {
+    // 상태 확인·계약 조회는 Swagger에 표시하되 Protobuf 게임 호출 코드는 생성하지 않습니다.
+    if (operation['x-codegen-exclude'] === true) continue;
     const name = operation.operationId;
     if (!/^[A-Z][A-Za-z0-9]*$/.test(name) || names.has(name) || !['get', 'post'].includes(method)) throw new Error('유효하지 않은 HTTP 작업: ' + name);
     names.add(name);

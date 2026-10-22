@@ -2,7 +2,7 @@
   "owner": "escape-protocol-tool",
   "target": "server",
   "contractHash": "adb017e3b5434fd779865b868dadda1ea0c99e938ea4b805bb734260e915a94f",
-  "fingerprint": "d3e52fff130fc4d94e54491a6a75a4749a1345269a3f35b4902cdf4427e7287d",
+  "fingerprint": "ff3ff995ae88184b10bae07459a65a42bc7cd551836a850acb8a3ee0211022a9",
   "tools": {
     "tsProto": "2.15.0",
     "grpcTools": "2.76.0",
@@ -12,6 +12,6 @@
     "escape/v1/common.ts": "8685d73ef87bf77590524ed81dccd4be358d50496ad3fc6756dc9cc239c93f0a",
     "escape/v1/game_api.ts": "2cf6b88710cf1def6a75f8e8e634b13e6e7d1974e0f53a516db71c2f269e957e",
     "escape/v1/session.ts": "550bf1bd99b576dfc30db8c71d7ed62a14ff19ecb90d30cb9476c33545cf86a1",
-    "http/game-api.ts": "f786094c63a84e8da724075316ca7931f300f761aec8c862bf4959a142749b89"
+    "http/game-api.ts": "40e9e936458816eb6dbe135fdf22b55079b4d15b54dc35639e9918563a6075a2"
   }
 }

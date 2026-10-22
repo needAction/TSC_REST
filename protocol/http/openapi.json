@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Escape Game Protobuf HTTP API",
+    "title": "2인 협동 방탈출 서버 API",
     "version": "1.0.0",
-    "description": "HTTP message bodies use Google Protobuf binary. Message definitions: protocol/escape/v1. No JSON game-message fallback."
+    "description": "## 통신과 문서 읽기\n\n게임 API 9개는 HTTP + Google Protobuf 바이너리(application/protobuf)입니다. /health와 /openapi.json만 JSON입니다. 아래 Schemas는 Protobuf 메시지의 설명용 논리 구조이며 게임 API가 JSON을 받는다는 뜻이 아닙니다.\n\n## 실행 흐름\n\n입장 → CSV 다운로드·검증·상대 입장 대기 → 각자 씬 로드 → 양쪽 ready → Playing → 정답 제출·문 허가 → 누적 방 해금 → 퇴장입니다. 기본 heartbeat는 3000ms, 서버 만료는 10000ms입니다.\n\n## 인증·결과\n\n입장 외 게임 요청은 x-participant-token 헤더가 필요합니다. 정답·문 value=false도 정상 200이며, 인증·입력·준비 오류는 GameApiResponse.failure와 HTTP 상태로 구분합니다. 게임 서버는 문 애니메이션·위치·음성을 중계하지 않습니다.\n\n## 이 화면의 범위\n\n이번 Swagger 화면은 문서 조회용입니다. 실행 버튼은 비활성화했습니다. Protobuf 실통신은 Unity 클라이언트와 npm run api:verify로 검사합니다. 서버는 단일 메모리 세션이며 재시작·재배포로 초기화됩니다."
   },
   "paths": {
     "/sessions/join": {
@@ -13,7 +13,55 @@
         "x-success-status": 201,
         "responses": {
           "201": {
-            "description": "joined",
+            "description": "성공 결과: GameApiResponse.joined. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "409": {
+            "description": "SESSION_FULL(1): 정원 초과. 방 API에서는 SUBMISSION_NOT_ALLOWED(9): 제출 역할·해금 위반, GAME_NOT_PLAYING(10): 양쪽 준비 미완료입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -25,7 +73,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -36,7 +92,12 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "2. 참가·퇴장"
+        ],
+        "summary": "세션 입장과 A/B 역할 배정",
+        "description": "빈 역할에 참가자를 등록하고 session_id, player, participant_token을 반환합니다. 정원은 2명이며 클라이언트가 역할을 지정하지 않습니다. 참가 토큰은 이후 x-participant-token 헤더에 전달합니다."
       }
     },
     "/sessions/{sessionId}": {
@@ -46,7 +107,95 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "snapshot",
+            "description": "성공 결과: GameApiResponse.snapshot. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -58,7 +207,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -77,14 +234,20 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
           {
             "ParticipantToken": []
           }
-        ]
+        ],
+        "tags": [
+          "3. 준비·생존 확인"
+        ],
+        "summary": "참가자·준비 단계·해금된 방 조회",
+        "description": "Waiting=참가자 부족, Loading=두 명 중 씬 준비 미완료, Playing=두 명 모두 준비 완료입니다. 조회는 heartbeat 생존 시간을 갱신하지 않습니다. unlocked_room_ids는 방 번호가 아닌 ROOM.ID 목록입니다."
       }
     },
     "/sessions/{sessionId}/ready": {
@@ -94,7 +257,95 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "snapshot",
+            "description": "성공 결과: GameApiResponse.snapshot. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -106,7 +357,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -125,14 +384,20 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
           {
             "ParticipantToken": []
           }
-        ]
+        ],
+        "tags": [
+          "3. 준비·생존 확인"
+        ],
+        "summary": "로컬 씬 준비 완료 보고",
+        "description": "실제 방·플레이어·입력 준비가 끝난 후 호출합니다. 대기실의 준비 버튼이 아닙니다. 두 참가자의 보고가 모두 끝나면 Playing입니다. 같은 참가자의 반복 보고는 ready=true를 유지합니다."
       }
     },
     "/sessions/{sessionId}/heartbeat": {
@@ -142,7 +407,95 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "completed",
+            "description": "성공 결과: GameApiResponse.completed. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -154,7 +507,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -173,7 +534,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
@@ -181,7 +543,12 @@
             "ParticipantToken": []
           }
         ],
-        "x-heartbeat-timeout": true
+        "x-heartbeat-timeout": true,
+        "tags": [
+          "3. 준비·생존 확인"
+        ],
+        "summary": "참가자 생존 확인",
+        "description": "기본 3000ms 간격으로 전송하고 서버는 마지막 heartbeat 이후 10000ms 미수신이면 참가자를 만료시킵니다. 만료된 토큰은 늦은 heartbeat로 복구되지 않습니다. 이 응답은 completed이며 snapshot을 포함하지 않습니다."
       }
     },
     "/sessions/{sessionId}/leave": {
@@ -191,7 +558,95 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "completed",
+            "description": "성공 결과: GameApiResponse.completed. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -203,7 +658,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -222,14 +685,20 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
           {
             "ParticipantToken": []
           }
-        ]
+        ],
+        "tags": [
+          "2. 참가·퇴장"
+        ],
+        "summary": "세션 퇴장과 자리 반환",
+        "description": "참가 토큰과 역할 자리를 함께 제거합니다. 남은 참가자의 ready와 게임 진행은 유지되며, 모두 나간 뒤 다음 입장에서 진행이 초기화됩니다. 서버 재시작은 메모리 세션을 초기화합니다."
       }
     },
     "/sessions/{sessionId}/data": {
@@ -239,7 +708,95 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "data",
+            "description": "성공 결과: GameApiResponse.data. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -251,7 +808,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -270,14 +835,20 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
           {
             "ParticipantToken": []
           }
-        ]
+        ],
+        "tags": [
+          "4. 게임 데이터"
+        ],
+        "summary": "검증된 CSV 데이터 번들 다운로드",
+        "description": "서버 시작 시 검증·등록한 메모리 CSV를 name/csv 목록과 SHA-256 version으로 전달합니다. Unity AssetBundle이나 프리팹 다운로드가 아닙니다. 현재 전체 테이블에는 PUZZLE_SLOT.Answer도 포함됩니다. 클라이언트는 다시 검증한 뒤 사용합니다."
       }
     },
     "/sessions/{sessionId}/puzzles/{puzzleId}/submit": {
@@ -287,7 +858,135 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "puzzle",
+            "description": "성공 결과: GameApiResponse.puzzle. ",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE(7): 요청 본문이 8192바이트를 초과했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE(6): 요청 Content-Type이 application/protobuf가 아닙니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -299,7 +998,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -318,7 +1025,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           },
           {
             "name": "puzzleId",
@@ -328,7 +1036,8 @@
               "type": "integer",
               "format": "int32",
               "minimum": 1
-            }
+            },
+            "description": "기존 검증 경로의 PUZZLE.ID입니다. 방 번호와 다릅니다."
           }
         ],
         "security": [
@@ -347,8 +1056,14 @@
               },
               "x-protobuf-message": "escape.v1.PuzzleCommandRequest"
             }
-          }
-        }
+          },
+          "description": "Protobuf PuzzleCommandRequest 바이너리입니다. 최대 8192바이트. Schemas에서 필드 번호·자료형을 확인하세요. JSON 텍스트는 지원하지 않습니다."
+        },
+        "tags": [
+          "6. 기존 퍼즐 제출"
+        ],
+        "summary": "퍼즐 ID 기준 정답 제출 — 기존 검증용",
+        "description": "기존 디버그·검증 호출 호환 경로입니다. accepted=false는 제출 자격·해금·Playing 조건을 만족하지 못한 결과이며 HTTP 200으로 반환될 수 있습니다. 콘텐츠 입력에는 방 번호 기준 /rooms/answer 사용을 권장합니다."
       }
     },
     "/sessions/{sessionId}/rooms/answer": {
@@ -358,7 +1073,155 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "room",
+            "description": "성공 결과: GameApiResponse.room. value는 정답 여부이며 door_allowed와 구분합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "409": {
+            "description": "SESSION_FULL(1): 정원 초과. 방 API에서는 SUBMISSION_NOT_ALLOWED(9): 제출 역할·해금 위반, GAME_NOT_PLAYING(10): 양쪽 준비 미완료입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE(7): 요청 본문이 8192바이트를 초과했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE(6): 요청 Content-Type이 application/protobuf가 아닙니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -370,7 +1233,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -389,7 +1260,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
@@ -408,9 +1280,14 @@
               },
               "x-protobuf-message": "escape.v1.RoomCommandRequest"
             }
-          }
+          },
+          "description": "Protobuf RoomCommandRequest 바이너리입니다. 최대 8192바이트. Schemas에서 필드 번호·자료형을 확인하세요. JSON 텍스트는 지원하지 않습니다."
         },
-        "description": "room_no and ordered answers. Server derives player role and puzzle type from authenticated participant and CSV. value=correct, door_allowed may remain false for BothSolved."
+        "description": "room_no와 순서가 있는 answers를 보냅니다. 서버가 토큰으로 역할을 확인하고 ROOM → PUZZLE → PUZZLE_SLOT을 조회합니다. value=true는 정답, false는 정상 오답입니다. BothSolved에서는 정답이어도 door_allowed=false일 수 있습니다. 통신·인증·역할 오류는 정상 false와 다른 failure 분기입니다.",
+        "tags": [
+          "5. 방 정답·문"
+        ],
+        "summary": "방 번호 기준 정답 제출"
       }
     },
     "/sessions/{sessionId}/rooms/door": {
@@ -420,7 +1297,155 @@
         "x-success-status": 200,
         "responses": {
           "200": {
-            "description": "room",
+            "description": "성공 결과: GameApiResponse.room. value와 door_allowed는 문 사용 허가 여부입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "400": {
+            "description": "PARTICIPANT_TOKEN_REQUIRED(4): 토큰 누락. 본문 API는 INVALID_REQUEST(5): 잘못된 Protobuf·방 번호·답 목록도 포함합니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "403": {
+            "description": "INVALID_PARTICIPANT(3): 무효 또는 만료된 참가 토큰입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "404": {
+            "description": "SESSION_NOT_FOUND(2): 세션을 찾을 수 없습니다. 방 API는 ROOM_NOT_FOUND(8)도 포함합니다. 미등록 경로는 ROUTE_NOT_FOUND(12)입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "409": {
+            "description": "SESSION_FULL(1): 정원 초과. 방 API에서는 SUBMISSION_NOT_ALLOWED(9): 제출 역할·해금 위반, GAME_NOT_PLAYING(10): 양쪽 준비 미완료입니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE(7): 요청 본문이 8192바이트를 초과했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE(6): 요청 Content-Type이 application/protobuf가 아닙니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/protobuf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "x-protobuf-message": "escape.v1.GameApiResponse"
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR(11): 서버 내부 처리에 실패했습니다.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -432,7 +1457,15 @@
             }
           },
           "default": {
-            "description": "GameApiResponse.failure with numeric SessionErrorCode",
+            "description": "실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "서버 접근 로그와 대응하는 요청 UUID입니다.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/protobuf": {
                 "schema": {
@@ -451,7 +1484,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "입장 응답에서 받은 session_id입니다."
           }
         ],
         "security": [
@@ -470,9 +1504,77 @@
               },
               "x-protobuf-message": "escape.v1.RoomCommandRequest"
             }
-          }
+          },
+          "description": "Protobuf RoomCommandRequest 바이너리입니다. 최대 8192바이트. Schemas에서 필드 번호·자료형을 확인하세요. JSON 텍스트는 지원하지 않습니다."
         },
-        "description": "room_no positive int32; answers must be empty. Once allowed, future open/close is local."
+        "description": "room_no를 보내고 answers는 비웁니다. value와 door_allowed는 모두 문 허가 여부입니다. 허가 시 해당 역할의 문과 Next 방을 해금합니다. 이후 해당 입장의 문 열기·닫기는 클라이언트 허가 캐시로 처리하므로 요청이 발생하지 않을 수 있습니다. 문 각도·애니메이션·실제 프리팹 생성은 서버가 동기화하지 않습니다.\n\n1번 방 요청의 바이너리 예: 08 01 (room_no=1, answers 비움). DoorHinge나 프리팹 생성 성공 여부를 검사하는 API는 아닙니다.",
+        "tags": [
+          "5. 방 정답·문"
+        ],
+        "summary": "방 번호 기준 문 사용 허가 확인"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "Health",
+        "x-codegen-exclude": true,
+        "tags": [
+          "1. 서버 상태·계약"
+        ],
+        "summary": "서버 HTTP 수신 상태 확인",
+        "description": "status=ok는 서버 응답 가능 여부입니다. 두 참가자의 Playing·음성 송수신·클라 프리팹 생성을 보장하지 않습니다.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "서버 응답 정상",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "GetOpenApi",
+        "x-codegen-exclude": true,
+        "tags": [
+          "1. 서버 상태·계약"
+        ],
+        "summary": "이 서버의 OpenAPI 계약 조회",
+        "description": "Swagger UI가 표시하는 OpenAPI 3.0.3 문서입니다. 운영 경로는 게임용 C# 호출 코드 생성에서 제외합니다.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "현재 생성된 OpenAPI 문서",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -481,8 +1583,518 @@
       "ParticipantToken": {
         "type": "apiKey",
         "in": "header",
-        "name": "x-participant-token"
+        "name": "x-participant-token",
+        "description": "입장 응답의 participant_token을 전달합니다. Bearer 접두사는 사용하지 않습니다."
+      }
+    },
+    "schemas": {
+      "SessionErrorCode": {
+        "type": "integer",
+        "format": "int32",
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "description": "0 = SESSION_ERROR_CODE_UNSPECIFIED\n\n1 = SESSION_FULL\n\n2 = SESSION_NOT_FOUND\n\n3 = INVALID_PARTICIPANT\n\n4 = PARTICIPANT_TOKEN_REQUIRED\n\n5 = INVALID_REQUEST\n\n6 = UNSUPPORTED_MEDIA_TYPE\n\n7 = PAYLOAD_TOO_LARGE\n\n8 = ROOM_NOT_FOUND\n\n9 = SUBMISSION_NOT_ALLOWED\n\n10 = GAME_NOT_PLAYING\n\n11 = INTERNAL_ERROR\n\n12 = ROUTE_NOT_FOUND",
+        "x-enum-varnames": [
+          "SESSION_ERROR_CODE_UNSPECIFIED",
+          "SESSION_FULL",
+          "SESSION_NOT_FOUND",
+          "INVALID_PARTICIPANT",
+          "PARTICIPANT_TOKEN_REQUIRED",
+          "INVALID_REQUEST",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "PAYLOAD_TOO_LARGE",
+          "ROOM_NOT_FOUND",
+          "SUBMISSION_NOT_ALLOWED",
+          "GAME_NOT_PLAYING",
+          "INTERNAL_ERROR",
+          "ROUTE_NOT_FOUND"
+        ]
+      },
+      "SessionFailure": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionErrorCode"
+              }
+            ],
+            "description": "정수 SessionErrorCode입니다. HTTP 상태와 함께 확인합니다.",
+            "x-protobuf-field": 1
+          }
+        }
+      },
+      "SessionPhase": {
+        "type": "integer",
+        "format": "int32",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "description": "0 = SESSION_PHASE_UNSPECIFIED\n\n1 = WAITING\n\n2 = LOADING\n\n3 = PLAYING",
+        "x-enum-varnames": [
+          "SESSION_PHASE_UNSPECIFIED",
+          "WAITING",
+          "LOADING",
+          "PLAYING"
+        ]
+      },
+      "PlayerRole": {
+        "type": "integer",
+        "format": "int32",
+        "enum": [
+          0,
+          1,
+          2
+        ],
+        "description": "0 = PLAYER_ROLE_UNSPECIFIED\n\n1 = ROLE_A\n\n2 = ROLE_B",
+        "x-enum-varnames": [
+          "PLAYER_ROLE_UNSPECIFIED",
+          "ROLE_A",
+          "ROLE_B"
+        ]
+      },
+      "PlayerSnapshot": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "player_id": {
+            "type": "string",
+            "description": "서버가 발급한 참가자 식별자입니다.",
+            "x-protobuf-field": 1
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRole"
+              }
+            ],
+            "description": "서버가 배정한 A/B 역할 enum입니다.",
+            "x-protobuf-field": 2
+          },
+          "scene_loaded": {
+            "type": "boolean",
+            "description": "해당 참가자의 로컬 씬 준비 완료 여부입니다.",
+            "x-protobuf-field": 3
+          }
+        }
+      },
+      "SessionSnapshot": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "서버 프로세스의 세션 식별자입니다.",
+            "x-protobuf-field": 1
+          },
+          "phase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionPhase"
+              }
+            ],
+            "description": "서버가 참가자 수와 준비 상태에서 계산한 게임 단계입니다.",
+            "x-protobuf-field": 2
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerSnapshot"
+            },
+            "description": "현재 참가자 목록입니다. 토큰은 포함하지 않습니다.",
+            "x-protobuf-field": 3
+          },
+          "unlocked_room_ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "누적 해금한 ROOM.ID 목록입니다. 같은 RoomNo라도 A/B의 ID는 다릅니다.",
+            "x-protobuf-field": 4
+          }
+        }
+      },
+      "QuerySessionResponse": {
+        "description": "표시용 논리 구조입니다. 실제 전송은 Protobuf 바이너리이며 oneof 결과 중 하나만 존재합니다.",
+        "x-protobuf-oneof": "outcome",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "snapshot"
+            ],
+            "properties": {
+              "snapshot": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SessionSnapshot"
+                  }
+                ],
+                "description": "이번 판정 반영 후 게임 상태입니다.",
+                "x-protobuf-field": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SessionFailure"
+                  }
+                ],
+                "description": "정상 게임 판정과 구분되는 요청 실패입니다.",
+                "x-protobuf-field": 2
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RoomCommandRequest": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "room_no": {
+            "type": "integer",
+            "format": "int32",
+            "description": "화면의 방 번호입니다. ROOM.ID와 구분합니다. C# RoomNo / TypeScript roomNo.",
+            "x-protobuf-field": 1,
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "description": "슬롯 순서대로 보낸 문자열 목록입니다. 최대 64개, 각 문자열 최대 256자. 숫자처럼 보여도 문자열과 앞자리 0을 유지합니다. 문 요청에서는 빈 목록이어야 합니다.",
+            "x-protobuf-field": 2,
+            "maxItems": 64
+          }
+        }
+      },
+      "PuzzleCommandRequest": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "description": "슬롯 순서대로 보낸 문자열 목록입니다. 최대 64개, 각 문자열 최대 256자. 숫자처럼 보여도 문자열과 앞자리 0을 유지합니다. 문 요청에서는 빈 목록이어야 합니다.",
+            "x-protobuf-field": 1,
+            "maxItems": 64
+          }
+        }
+      },
+      "JoinSessionReply": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "서버 프로세스의 세션 식별자입니다.",
+            "x-protobuf-field": 1
+          },
+          "player": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlayerSnapshot"
+              }
+            ],
+            "description": "이번 입장에서 배정한 참가자 정보입니다.",
+            "x-protobuf-field": 2
+          },
+          "participant_token": {
+            "type": "string",
+            "description": "참가 인증 토큰입니다. 이후 x-participant-token 헤더에 전달하며 로그에 기록하지 않습니다.",
+            "x-protobuf-field": 3
+          }
+        }
+      },
+      "OperationCompleted": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {}
+      },
+      "CsvText": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "CSV 시트 이름입니다.",
+            "x-protobuf-field": 1
+          },
+          "csv": {
+            "type": "string",
+            "description": "헤더를 포함한 UTF-8 CSV 텍스트입니다.",
+            "x-protobuf-field": 2
+          }
+        }
+      },
+      "CsvDataBundle": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "정렬·재직렬화한 CSV 묶음의 SHA-256 내용 식별값입니다.",
+            "x-protobuf-field": 1
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CsvText"
+            },
+            "description": "검증된 CSV 문자열 목록입니다.",
+            "x-protobuf-field": 2
+          }
+        }
+      },
+      "PuzzleSubmissionReply": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "description": "기존 퍼즐 ID 제출 경로의 제출 자격 승인 여부입니다.",
+            "x-protobuf-field": 1
+          },
+          "correct": {
+            "type": "boolean",
+            "description": "기존 퍼즐 ID 제출 경로의 정답 여부입니다.",
+            "x-protobuf-field": 2
+          },
+          "snapshot": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionSnapshot"
+              }
+            ],
+            "description": "이번 판정 반영 후 게임 상태입니다.",
+            "x-protobuf-field": 3
+          }
+        }
+      },
+      "RoomDecisionReply": {
+        "type": "object",
+        "description": "Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.",
+        "properties": {
+          "room_no": {
+            "type": "integer",
+            "format": "int32",
+            "description": "화면의 방 번호입니다. ROOM.ID와 구분합니다. C# RoomNo / TypeScript roomNo.",
+            "x-protobuf-field": 1,
+            "minimum": 1,
+            "maximum": 2147483647
+          },
+          "value": {
+            "type": "boolean",
+            "description": "정답 API에서는 정답 여부, 문 API에서는 문 허가 여부입니다. 정상 false는 failure가 아닙니다.",
+            "x-protobuf-field": 2
+          },
+          "door_allowed": {
+            "type": "boolean",
+            "description": "문 사용 허가 여부입니다. BothSolved에서는 value=true인 정답 응답과 다를 수 있습니다.",
+            "x-protobuf-field": 3
+          },
+          "snapshot": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionSnapshot"
+              }
+            ],
+            "description": "이번 판정 반영 후 게임 상태입니다.",
+            "x-protobuf-field": 4
+          }
+        }
+      },
+      "GameApiResponse": {
+        "description": "표시용 논리 구조입니다. 실제 전송은 Protobuf 바이너리이며 oneof 결과 중 하나만 존재합니다.",
+        "x-protobuf-oneof": "outcome",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "joined"
+            ],
+            "properties": {
+              "joined": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/JoinSessionReply"
+                  }
+                ],
+                "description": "입장 성공 결과입니다.",
+                "x-protobuf-field": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "snapshot"
+            ],
+            "properties": {
+              "snapshot": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SessionSnapshot"
+                  }
+                ],
+                "description": "이번 판정 반영 후 게임 상태입니다.",
+                "x-protobuf-field": 2
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "completed"
+            ],
+            "properties": {
+              "completed": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/OperationCompleted"
+                  }
+                ],
+                "description": "본문 필드가 없는 완료 결과입니다.",
+                "x-protobuf-field": 3
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "data"
+            ],
+            "properties": {
+              "data": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CsvDataBundle"
+                  }
+                ],
+                "description": "CSV 데이터 번들입니다.",
+                "x-protobuf-field": 4
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "puzzle"
+            ],
+            "properties": {
+              "puzzle": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PuzzleSubmissionReply"
+                  }
+                ],
+                "description": "기존 퍼즐 ID 제출 결과입니다.",
+                "x-protobuf-field": 5
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "room"
+            ],
+            "properties": {
+              "room": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RoomDecisionReply"
+                  }
+                ],
+                "description": "방 번호 기준 판정 결과입니다.",
+                "x-protobuf-field": 6
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "failure"
+            ],
+            "properties": {
+              "failure": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SessionFailure"
+                  }
+                ],
+                "description": "정상 게임 판정과 구분되는 요청 실패입니다.",
+                "x-protobuf-field": 7
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       }
     }
-  }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "이 Swagger 문서를 제공하는 현재 서버"
+    }
+  ],
+  "tags": [
+    {
+      "name": "1. 서버 상태·계약"
+    },
+    {
+      "name": "2. 참가·퇴장"
+    },
+    {
+      "name": "3. 준비·생존 확인"
+    },
+    {
+      "name": "4. 게임 데이터"
+    },
+    {
+      "name": "5. 방 정답·문"
+    },
+    {
+      "name": "6. 기존 퍼즐 제출"
+    }
+  ]
 }
