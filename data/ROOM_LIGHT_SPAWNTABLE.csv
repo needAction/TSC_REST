@@ -1,0 +1,15 @@
+﻿RoomID,PrefabID,AnchorID
+1,Room1_Light,Room1_LightPoint_1
+2,Room2_Light,Room2_LightPoint_1
+3,Room2_Light,Room2_LightPoint_2
+4,Room3_Light,Room3_LightPoint_1
+5,Room3_Light,Room3_LightPoint_2
+6,Room3_Light,Room3_LightPoint_3
+7,Room3_Light,Room3_LightPoint_4
+8,Room4_Light,Room4_LightPoint_1
+9,Room5_Light,Room5_LightPoint_1
+10,Room5_Light,Room5_LightPoint_2
+11,Room5_Light,Room5_LightPoint_3
+12,Room5_Light,Room5_LightPoint_4
+13,Room6_Light,Room6_LightPoint_1
+14,Room7_Light,Room7_LightPoint_1
