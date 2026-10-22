@@ -95,6 +95,8 @@ BIND_ADDRESS=0.0.0.0
 HOST_PORT=3000
 CONTAINER_PORT=3000
 RESTART_POLICY=unless-stopped
+LOG_MAX_SIZE_MB=10
+LOG_MAX_FILES=3
 PUBLIC_HEALTH_URL=http://32.236.55.218:3000/health
 HEALTH_TIMEOUT_MS=60000
 HEALTH_INTERVAL_MS=500
@@ -154,6 +156,8 @@ npm.cmd run docker:cloud
 5. 로그를 출력하고 컨테이너 내부와 PC에서 공개 주소의 `/health`를 확인합니다.
 
 두 상태 검사가 성공해야 `[배포 완료] ... status: ok`가 나옵니다. 현재 `.env` 값은 이미지에 굽는 대신 컨테이너 실행 시 전달합니다. 재시작 정책은 `unless-stopped`입니다.
+
+2026-10-22부터 배포 도구가 새 컨테이너에 Docker 로그 순환을 적용합니다. 기본값은 파일당 10MB·최대 3개이며 `.env.deploy-cloud`에 LOG_MAX_SIZE_MB/LOG_MAX_FILES가 없어도 적용됩니다. `--plan`에서 확인하고 평소처럼 deploy-cloud.cmd를 실행하면 됩니다. 기존 컨테이너는 재배포로 교체되어야 반영됩니다. [설정과 확인 명령](docker-deployment.md)을 참고하십시오.
 
 ## 6. 배포 후 직접 확인
 

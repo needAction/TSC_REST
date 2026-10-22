@@ -87,6 +87,38 @@ test("로컬은 원격 context를 거부하고 클라우드 대상은 명시적�
   assert.deepEqual(actual.environment, { Path: "keep" });
 });
 
+test("Docker 로그 순환 설정은 기존 파일에도 기본값을 적용하고 잘못된 값을 배포 전에 거부한다", t => {
+  for (const profile of ["local", "cloud"]) {
+    const defaults = fixture(t, profile).load();
+    assert.equal(defaults.logMaxSizeMb, 10);
+    assert.equal(defaults.logMaxFiles, 3);
+    const configured = fixture(t, profile, { LOG_MAX_SIZE_MB: "25", LOG_MAX_FILES: "5" }).load();
+    assert.equal(configured.logMaxSizeMb, 25);
+    assert.equal(configured.logMaxFiles, 5);
+  }
+  for (const key of ["LOG_MAX_SIZE_MB", "LOG_MAX_FILES"])
+    for (const value of ["", "0", "-1", "1.5", "10m", "NaN", "2147483648", "10;echo"])
+      assert.throws(() => fixture(t, "local", { [key]: value }).load(), new RegExp(key));
+});
+
+test("로컬·클라우드의 사전 검사와 서비스 컨테이너는 설정한 로그 제한으로 생성된다", async t => {
+  for (const profile of ["local", "cloud"]) {
+    const config = fixture(t, profile, { LOG_MAX_SIZE_MB: "25", LOG_MAX_FILES: "5" }).load();
+    const cli = new FakeDocker();
+    const { deployment, messages } = workflow(config, cli);
+    await deployment.execute();
+    const runs = cli.commands().filter(cmd => cmd[0] === "run");
+    assert.equal(runs.length, 2);
+    for (const args of runs) {
+      assert.equal(args[args.indexOf("--log-driver") + 1], "json-file");
+      assert.deepEqual(args.flatMap((value, index) => value === "--log-opt" ? [args[index + 1]] : []),
+        ["max-size=25m", "max-file=5"]);
+      assert.ok(args.indexOf("max-file=5") < args.indexOf(imageId));
+    }
+    assert.ok(messages.some(line => line.includes("파일당 25MB / 최대 5개")));
+  }
+});
+
 test("정상 배포는 새 이미지와 실제 환경을 검증한 뒤 정확한 기존 컨테이너만 교체한다", async t => {
   const config = fixture(t).load(); const cli = new FakeDocker();
   const { deployment, messages } = workflow(config, cli);

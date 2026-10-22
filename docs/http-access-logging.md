@@ -126,7 +126,7 @@ ssh escape-cloud "docker logs --follow --tail 100 escape-server-cloud" |
 ssh escape-cloud "docker logs --since 10m --timestamps escape-server-cloud"
 ```
 
-조회·heartbeat·health도 모두 기록하므로 테스트 시간이 길수록 로그가 늘어납니다. 파일 보존·로테이션은 Docker 로그 드라이버 설정의 책임이며 이번 코드에 별도 보존 정책을 추가하지 않았습니다. 기존 컨테이너를 제거하면 기존 컨테이너 로그도 계속 조회할 수 있다고 보장하지 않습니다. 필요한 테스트 기록은 교체 전에 보관합니다.
+조회·heartbeat·health도 모두 기록하므로 테스트 시간이 길수록 로그가 늘어납니다. 2026-10-22에 기존 배포 도구에 Docker 로그 순환을 추가했습니다. 다음 배포에서 생성하는 컨테이너는 기본 json-file·파일당 10MB·최대 3개를 사용하고, `.env.deploy-*`의 LOG_MAX_SIZE_MB/LOG_MAX_FILES로 조정합니다. 자세한 내용은 [Docker 로그 용량 제한](docker-deployment.md)을 참고하십시오. 별도 Error 파일을 추가할 경우 해당 파일의 보존 정책은 따로 필요합니다. 기존 컨테이너를 제거하면 기존 컨테이너 로그도 계속 조회할 수 있다고 보장하지 않습니다. 필요한 테스트 기록은 교체 전에 보관합니다.
 
 ## 6. 현재 접근 로그와 후속 패킷 처리 추적의 구분
 

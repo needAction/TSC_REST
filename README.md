@@ -26,6 +26,8 @@ npm.cmd run run:local
 | 로컬 Docker | run-docker-local.cmd / run-docker-local.sh | `npm run docker:local` |
 | SSH 원격 배포 | deploy-cloud.cmd / deploy-cloud.sh | `npm run docker:cloud` |
 
+Docker 배포 도구는 새 컨테이너에 로그 순환을 적용합니다. 기본 **파일당 10MB·최대 3개**이며 `.env.deploy-local`/`.env.deploy-cloud`의 `LOG_MAX_SIZE_MB`·`LOG_MAX_FILES`로 조정합니다. 기존 설정 파일에 항목이 없어도 기본값을 사용합니다. 실제 적용은 다음 컨테이너 교체부터이며 [설정·검사 안내](docs/docker-deployment.md)를 따릅니다.
+
 local/test 실행기는 환경 파일 읽기 → TypeScript 빌드 → 설정 검증 → 서버 실행을 수행합니다. 빌드 실패 시 이전 dist를 실행하지 않습니다. 서버 내부에서는 **CSV 로드·검증·클래스 변환이 성공한 뒤에만 HTTP 수신**을 시작합니다. CSV 오류는 시작 실패로 처리합니다. `npm start`는 기존 `dist/main.js`를 실행하므로 빌드·환경 파일 로드는 자동 수행하지 않습니다.
 
 ## 2. 환경과 주소

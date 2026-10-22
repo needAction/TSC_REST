@@ -9,7 +9,8 @@ const profiles = Object.freeze({
 });
 const keys = new Set(["DOCKER_CONTEXT", "SSH_TARGET", "IMAGE_NAME", "CONTAINER_NAME", "RUNTIME_ENV_FILE",
   "BIND_ADDRESS", "HOST_PORT", "CONTAINER_PORT", "RESTART_POLICY", "PUBLIC_HEALTH_URL",
-  "HEALTH_TIMEOUT_MS", "HEALTH_INTERVAL_MS", "HEALTH_REQUEST_TIMEOUT_MS", "STOP_TIMEOUT_MS"]);
+  "HEALTH_TIMEOUT_MS", "HEALTH_INTERVAL_MS", "HEALTH_REQUEST_TIMEOUT_MS", "STOP_TIMEOUT_MS",
+  "LOG_MAX_SIZE_MB", "LOG_MAX_FILES"]);
 
 function integer(values, key, fallback, maximum = 2147483647) {
   const text = values[key] ?? String(fallback);
@@ -75,6 +76,8 @@ class DockerDeployConfig {
       throw new Error("상태 확인 간격과 요청 제한은 HEALTH_TIMEOUT_MS 이하여야 합니다.");
     return Object.freeze({ profile, root, image, container, runtimeFile, context, sshTarget, restart,
       hostPort, containerPort, bindAddress, publicHealthUrl, healthTimeoutMs, healthIntervalMs, healthRequestTimeoutMs,
+      logMaxSizeMb: integer(values, "LOG_MAX_SIZE_MB", 10),
+      logMaxFiles: integer(values, "LOG_MAX_FILES", 3),
       stopTimeoutMs: integer(values, "STOP_TIMEOUT_MS", 10000),
       publish: `${family === 6 ? `[${bindAddress}]` : bindAddress}:${hostPort}:${containerPort}` });
   }

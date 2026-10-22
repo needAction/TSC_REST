@@ -25,10 +25,13 @@ class DockerDeployment {
     this.log(`이미지: ${c.image} / 컨테이너: ${c.container}`);
     this.log(`서버 환경 파일: ${c.runtimeFile}`);
     this.log(`포트: ${c.publish} / 재시작: ${c.restart} / 상태 확인: ${c.publicHealthUrl}`);
+    this.log(`Docker 로그: json-file / 파일당 ${c.logMaxSizeMb}MB / 최대 ${c.logMaxFiles}개 (오래된 로그부터 제거)`);
     this.log("순서: 대상 확인 → 이미지 빌드 → 서버 설정 검증 → 기존 컨테이너 교체 → 로그 → 내부/공개 상태 확인");
   }
   async execute() {
     const c = this.config;
+    const logOptions = ["--log-driver", "json-file", "--log-opt", `max-size=${c.logMaxSizeMb}m`,
+      "--log-opt", `max-file=${c.logMaxFiles}`];
     this.describe();
     const target = c.profile === "local" ? new LocalDockerTarget(c.context) : new SshDockerTarget(c.sshTarget);
     const prefix = target.resolve(this.cli);
@@ -40,7 +43,7 @@ class DockerDeployment {
     const imageId = run(["image", "inspect", "--format", "{{.Id}}", c.image], { capture: true });
     if (!/^sha256:[a-f0-9]{64}$/.test(imageId)) throw new Error("빌드된 이미지 ID를 확인하지 못했습니다.");
     this.log("[2/5] 새 이미지의 서버 환경 검증");
-    run(["run", "--rm", "--env-file", c.runtimeFile, imageId, "node", "-e", validateRuntime, String(c.containerPort)]);
+    run(["run", "--rm", ...logOptions, "--env-file", c.runtimeFile, imageId, "node", "-e", validateRuntime, String(c.containerPort)]);
     this.log("[3/5] 지정한 기존 컨테이너만 교체");
     const exactName = c.container.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const previous = run(["container", "ls", "--all", "--filter", `name=^/${exactName}$`, "--format", "{{.ID}}"], { capture: true });
@@ -51,6 +54,7 @@ class DockerDeployment {
     }
     // 태그가 도중에 변경되어도 검증한 이미지로 실행합니다.
     const containerId = run(["run", "--detach", "--name", c.container, "--restart", c.restart,
+      ...logOptions,
       "--env-file", c.runtimeFile, "--publish", c.publish, "--label", `escape.deploy.profile=${c.profile}`, imageId], { capture: true });
     if (!/^[a-f0-9]{12,64}$/.test(containerId)) throw new Error("새 컨테이너 ID를 확인하지 못했습니다.");
     this.log("[4/5] 새 컨테이너 로그");
