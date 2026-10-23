@@ -1,5 +1,7 @@
 # Unity 클라이언트 코드·기능 계층과 설계 의도
 
+> 이 파일은 2026-10-21 구조의 초기 상세 기록입니다. 최신 클라이언트 문서는 클라이언트 저장소의 `Docs/ArchitectureReview.md`, `Docs/ClientArchitectureReview.md`, `Docs/RefactorConventions.md`를 기준으로 봅니다. 이후 손·사운드·결과 UI·자원 수명 수정의 현재 상태를 이 초기 기록의 미완료 표현으로 판단하지 않습니다.
+
 기준: 2026-10-21, `C:/Users/m/Desktop/listen`의 현재 로컬 코드·CSV·설정. Unity 6000.2.8f1입니다. 기능 계층의 상위부터 내려가며 설계 의도, 클래스·메서드, 데이터와 외부 어댑터를 설명합니다.
 
 관련 문서: [전체 구조](SystemCodeArchitecture.md), [서버 상세](ServerCodeArchitecture.md). 문서 작업은 기존 코드·씬·CSV·README를 수정하지 않습니다.

@@ -1,63 +1,40 @@
 # 2인 방탈출 — 서버·클라이언트 종합
 
-기준일: **2026-10-20**. 현재 구현과 검증 범위를 설명합니다. 세부 실행·API는 [서버 README](../../README.md), Unity의 씬·입력·검토는 별도 클라이언트 README와 Docs/EntryConsistency.md를 따릅니다.
+기준일: **2026-10-23**. [서버 README](../../README.md), [서버 구조 점검](../ArchitectureReview.md), [서버 상세 구조](../ServerCodeArchitecture.md)를 봅니다. 클라이언트 상세와 종합 도식은 Unity 프로젝트 `Docs/ClientArchitectureReview.md`, `Docs/ArchitectureReview.md`에 있습니다.
 
-## 현재 구조
-
-서버는 두 참가자의 역할·세션 단계·문제 정답·문 허가·누적 방 해금을 관리합니다. 각 Unity 클라이언트는 자기 방과 1인칭 플레이어를 구성합니다. 캐릭터 위치·문 애니메이션을 서로 동기화하는 구조가 아니며 음성은 Vivox 별도 서비스입니다.
+## 현재 책임과 연결
 
 ```mermaid
-flowchart TB
-    CFG[환경별 connection.json] --> ENTRY[Join · GameEntryService]
-    SERVER[TypeScript HTTP + Protobuf 서버] -->|검증한 CSV 묶음·역할·진행 상태| ENTRY
+flowchart LR
+    CSV[검증한 CSV / 활성 REGISTRY] --> SERVER[서버 세션·정답·문 허가]
+    SERVER -->|번들·HTTP Protobuf 결과| ENTRY[클라 입장·데이터 등록]
     LOCAL[에디터 로컬 CSV] --> ENTRY
-    ENTRY -->|지속 게임 수명으로 씬 진입| WORLD[WorldRuntime · 첫 방 로드]
-    WORLD --> PLAYER[공통 스폰 앵커 · 카메라 · Input System 이동]
-    WORLD --> READY{방 + 플레이어 준비}
-    PLAYER --> READY
-    READY -->|자동 ready 보고| SERVER
-    SERVER -->|Waiting / Loading / Playing| SESSION[클라 세션 상태·독립 소비자 이벤트]
-    SESSION --> VOICE[Vivox 자동 연결]
+    ENTRY --> WORLD[방·앵커·프리팹·A/B 손 플레이어]
+    WORLD --> READY[두 참가자 ready → Playing]
+    READY --> UI[좌클릭 Closeup·정답/문 UI]
+    UI -->|방 번호·정답| SERVER
+    SERVER -->|해금·판정| FX[방 연결·문 연출·협동 엔딩]
+    CONFIG[GameFeedback 에셋] --> AUDIO[보행·UI음·3초 방 배경음]
+    WORLD --> AUDIO
 ```
 
-## 구현한 기능
+서버는 프로세스당 메모리 세션 하나와 A/B 정답·허가·누적 해금을 소유합니다. 위치·문 각도·카메라·음원은 로컬 표현입니다. 음성은 별도의 Vivox 어댑터로 연결됩니다. 온라인은 서버 번들, 로컬 테스트는 클라 CSV를 사용하며 온라인 오류를 로컬 판정으로 대체하지 않습니다.
 
-| 영역 | 현재 구현 | 남은 범위 |
+## 구현과 확인을 구분한 현재 범위
+
+| 영역 | 코드에 연결된 기능 | 추가 확인/미구현 |
 |---|---|---|
-| 접속 | Editor/TestBuild/StableBuild config, 자동 입장·재시도 | StableBuild 클라우드 주소 등록 |
-| 통신 | HTTP + Google Protobuf, 생성 코드/OpenAPI 로컬 배포 도구 | 실제 클라우드 운영·CI/CD |
-| 세션 | 입장·역할·조회·ready·3초 heartbeat·10초 만료·퇴장 | 재접속 신분 복구·다중 세션·영구 저장 |
-| 데이터 | Excel→CSV→서버/로컬 로드, 스키마·관계 검사·불변 타입 매핑 | 새 콘텐츠/시트 정의 시 검증·매핑 갱신 |
-| 진행 | 정답 제출·문 허가·허가 캐시·누적 해금 | 실제 문·입력 UI·방 이동 연출 |
-| 플레이어 | 공통 R01_Player 스폰, A 큐브/B 실린더, 카메라·캡슐, WASD·마우스 시점·공통 조작 잠금·모델 벽 끼임 보정 | 손/무전기 모델 연결·좌클릭 Closeup·실제 방 충돌 검토 |
-| 방 | R01 실제 로더 조립, 포함 모델 재사용, 개발자 다음 방 연결 | B LEDPanel 앵커, 후속 콘텐츠와 런타임 공간 연결 |
-| 음성 | 세션 기반 Vivox 자동 채널 연결 | Bluetooth 장치·실제 양방향 송수신 검토 |
+| 접속 | Editor/Test/Stable config 자동 접속, ready/heartbeat/퇴장 | 재접속 신분 복구·다중 세션·영구 저장 |
+| 데이터/생성 | 검증·타입 주입·번들, proto/OpenAPI/콘텐츠 계약 생성 도구 | 새 기능의 실제 Handler는 별도 구현 |
+| 방/입력 | A/B 방 계획, 공통/역할 앵커, 손 모델·WASD·시점·좌클릭 | 전체 방 프리팹/충돌/실제 빌드 확인 |
+| 상호작용 | Closeup·정답 제출·문 허가 캐시·로컬 개폐·누적 다음 방 | 새 콘텐츠 규칙·전체 조작 시나리오 |
+| 엔딩/연출 | 양쪽 7번 방 정답→영상→시간/Result_UI→확인 종료, 보행/사운드 | 실제 영상·출력 장치·음성 청취 재검증 |
+| 운영 | Swagger UI, HTTP 접근 stdout 로그, Docker 로그 회전 | Error 전용 앱 파일 로그·무중단 배포·자동 롤백 |
 
-## 수명과 준비 완료
+이번 구조 점검에서 활성 시트 주입을 TS/C#에서 통일하고, 방 조회 할당·배경음 반복 갱신·엔딩 영상 자원 보유·사운드 enum ID·이벤트 중복 연결을 보강했습니다. 조명/Light Probe와 R01_LEDPanel 소리는 보류입니다.
 
-Join 화면은 입력·표시·구독 수명만 소유합니다. GameEntryService는 씬 로드 시작 전까지 화면 취소를 따르고 시작 후에는 지속되는 게임 소유 토큰을 사용합니다. 씬 전환으로 화면이 제거되어도 정상 입장이 취소되지 않습니다. 게임 소유자가 종료되거나 방/플레이어 초기화가 실패하면 입장을 정리합니다.
+## 검증
 
-Ingame의 WorldRuntime에 실제 로더와 첫 RoomSceneView를 연결했습니다. Bootstrapper는 로드 성공한 첫 방을 플레이어 생성기에 전달하며 **방과 플레이어가 모두 준비된 경우에만 ready**를 보고합니다. 컴파일/프리팹이 보인다는 이유로 준비를 보고하지 않습니다.
+서버 176개, 클라 순수 핵심 회귀 312개, 플레이어 78개, 사운드/보행 48개, 엔딩 41개, 실제 C#↔Node HTTP/Protobuf 22개를 통과했습니다. 서버 원본 CSV 24개/활성 14개, 클라 원본 CSV 14개/활성 14개이며 오류는 0개입니다. 원본·활성·고정 코퍼스의 개수는 서로 다른 의미입니다.
 
-## 데이터와 정수 단위
-
-Git Pull 이후 서버·클라 CSV는 ANCHOR_INTERACT / ANCHOR_NONINTERACT / CARD / PREFAB 4개에서 다릅니다. 온라인은 서버 메모리 원본, 에디터 로컬 모드는 빌드에 포함된 TextAsset 원본을 사용합니다. 최신 방 배치의 마우스/충돌 검토는 로컬 A 테스트로 수행합니다. 서버 실패를 로컬 데이터로 대체하지 않습니다.
-
-CHARACTER_STAT 선택은 GAME_CONFIG 16010이 지정합니다. 기본 17001은 3000mm/s, 가속 10000mm/s², 감속 12000mm/s²입니다. Unity의 CharacterStatUnits를 CSV 검사와 실제 플레이어 정의에서 공유합니다. 서버도 float32→정수 milli 단위로 동일 범위를 검사합니다. 시간은 정수 ms이며 실제 Unity Transform·물리·입력 경계에서 필요한 float 변환을 합니다. 물리 결정성·위치 동기화·replay를 완료했다는 의미는 아닙니다.
-
-## 현재 검증과 제한
-
-- 서버 자동 검사 **154개**, 클라 공통 순수 C# **201개**, 스폰·이동·시점·조작 상태 **72개** 통과.
-- 서버는 **3121개 셀·경고 52개**, 최신 클라는 **3151개 셀·경고 29개**이며 양쪽 CSV 오류는 **0개**입니다. 셀/앵커 개수와 경고 0을 고정 성공 조건으로 쓰지 않습니다.
-- Unity 6.2 참조 환경에서 런타임(Editor 정의)·에디터 도구·Windows 런타임 분리 컴파일을 통과했습니다.
-- 실제 Unity Play·빌드·물리·메뉴·음성 실행 결과는 별도 검토가 필요합니다. 과거 검사 기록을 이번 변경의 실행 통과로 사용하지 않습니다.
-- **B 역할 R01_LEDPanelPoint가 실제 프리팹에 없습니다.** B 임시 모델·이동의 개발자 미리보기는 가능하지만 정상 B 입장/양쪽 Playing 검증은 콘텐츠 배치 후 진행합니다. 누락을 임의 위치나 준비 완료로 바꾸지 않습니다.
-- 격리 Play 도구가 B 미완성으로 중단되면 종료 코드 2이며 전체 통과가 아닙니다.
-
-## 다음 검토
-
-1. Unity 컴파일 후 Tools > Game > Verify Ingame Wiring로 실제 씬 참조 확인.
-2. Join의 로컬 테스트 A로 데이터/역할/플레이어가 씬 전환 뒤 유지되는지 확인.
-3. 정상 입장 후 Verify Gameplay Readiness와 WASD·바닥/벽 충돌 확인.
-4. B LEDPanel 앵커 배치 후 두 PC 입장·ready·Playing·단절/재입장 검토.
-5. 마우스 시점·충돌 표현을 클라이언트 Docs/PlayerLookAndCollision.md 순서로 검토한 뒤 Closeup·문/정답 UI·실제 다음 방 연결을 각각 진행.
+Unity DLL 참조 분리 컴파일과 실제 Unity Play·GPU/Memory Profiler·두 PC 음성/클라우드 검증을 구분합니다. 이번에는 실제 EC2 재배포·Unity Play를 수행하지 않았습니다. 정수 단위/계약 분리만으로 P2P 전환·replay 결정성이 완성되지는 않습니다.

@@ -15,6 +15,8 @@ const { defaultSchemas } = require("../dist/data/validation/CsvSchema");
 const { CsvGameData } = require("../dist/data/tables/CsvGameData");
 const { PuzzleData } = require("../dist/data/tables/PuzzleData");
 const { GameConfigData } = require("../dist/data/tables/GameConfigData");
+const { SoundData } = require("../dist/data/tables/SoundData");
+const { SoundLinkData } = require("../dist/data/tables/SoundLinkData");
 const { readCsvDirectory, loadGameData } = require("../dist/infrastructure/data/loadGameData");
 const { Utf8CsvFileSource } = require("../dist/infrastructure/data/Utf8CsvFileSource");
 
@@ -277,6 +279,38 @@ test("추가 규칙 주입·미등록 시트 일반 검사·선택 테이블 누
   const game = new CsvGameData(store); assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
 });
 
+test("REGISTRY 비활성 시트는 파일이 있어도 런타임 행 변환과 번들에서 제외된다", async () => {
+  const sources = { ...await originals };
+  const rows = parser.read(sources.REGISTRY).rows;
+  for (const sheet of ['SOUND', 'SOUND_LINK'])
+    cell(sources, 'REGISTRY', rows.findIndex(row => row.get('Sheet') === sheet), 'Active', 'N');
+  const store = new CsvDataStore();
+  assert.equal(store.register(await memory(sources), validator).isValid, true);
+  const game = new CsvGameData(store);
+  assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
+  assert.equal(store.tryGetTable(SoundData.table), undefined);
+  assert.equal(store.tryGetTable(SoundLinkData.table), undefined);
+  assert.ok(game.source.getDocument('SOUND').rows.length > 0, '원본 검증 데이터는 보존');
+  const { createGameDataBundle } = require('../dist/data/GameDataBundle');
+  const bundle = createGameDataBundle(game.source);
+  assert.ok(!bundle.tables.some(table => table.name === 'SOUND' || table.name === 'SOUND_LINK'));
+  store.mapTable(SoundData.table);
+  assert.deepEqual(new CsvGameData(store).sounds, [], '도구가 명시적으로 매핑한 캐시도 비활성 정책을 우회하지 않음');
+});
+
+test("REGISTRY에서 제거한 기존 시트도 원본 검증만 하고 런타임 정의로 노출하지 않는다", async () => {
+  const sources = { ...await originals };
+  const registry = parser.read(sources.REGISTRY), quote = value => '"' + value.replaceAll('"', '""') + '"';
+  sources.REGISTRY = registry.headers.map(quote).join(',') + '\n' + registry.rows
+    .filter(row => !['SOUND', 'SOUND_LINK'].includes(row.get('Sheet')))
+    .map(row => registry.headers.map(header => quote(row.get(header))).join(',')).join('\n');
+  const store = new CsvDataStore(); assert.equal(store.register(await memory(sources), validator).isValid, true);
+  const game = new CsvGameData(store);
+  assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
+  assert.equal(store.tryGetTable(SoundData.table), undefined);
+  assert.ok(game.source.getDocument('SOUND').rows.length > 0);
+});
+
 test("GAME_CONFIG는 선언된 자료형으로만 숫자를 제공한다", async () => {
   const game = await loadGameData(fixtureFolder);
   assert.equal(game.gameConfigs.find(row => row.id === 16001).asInt(), 900000);
@@ -306,6 +340,7 @@ test("명령행 검증기는 기본 data 폴더를 검사하고 잘못된 폴더
   const script = path.resolve(__dirname, "../dist/tools/validateCsv.js");
   const good = spawnSync(process.execPath, [script], { cwd: os.tmpdir(), encoding: "utf8", timeout: 10000 });
   assert.equal(good.status, 0, good.stderr); assert.match(good.stdout, /\d+개 파일 \/ 오류 0개/);
+  assert.match(good.stdout, /런타임 정의 준비 완료: REGISTRY 활성 \d+개 시트/, "원본 파일 수와 활성 등록 수를 구분");
   const missing = spawnSync(process.execPath, [script, path.join(os.tmpdir(), "missing-" + process.pid)], { encoding: "utf8", timeout: 10000 });
   assert.equal(missing.status, 1); assert.match(missing.stderr, /CSV 오류/);
 });

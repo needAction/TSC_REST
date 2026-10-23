@@ -1,8 +1,8 @@
 # 서버 코드·기능 계층과 설계 의도
 
-기준: 2026-10-21 로컬 서버 코드. 구현 설명이며, 새 기능을 구현한 문서는 아닙니다. 각 절의 코드 링크는 확인한 실제 파일로 연결됩니다. 소스 변경 시 줄 번호와 데이터 예시는 달라질 수 있습니다.
+기준: 2026-10-23 로컬 서버 코드. 최신 점검·수정 근거는 [서버 구조 점검](ArchitectureReview.md)을 함께 봅니다. 구현 설명이며, 새 기능을 구현한 문서는 아닙니다. 각 절의 코드 링크는 확인한 실제 파일로 연결됩니다. 소스 변경 시 줄 번호와 데이터 예시는 달라질 수 있습니다.
 
-관련 문서: [전체 구조](SystemCodeArchitecture.md), [클라이언트 상세](ClientCodeArchitecture.md).
+관련 문서: [전체 구조](project-overview/README.md), [클라이언트 초기 상세 기록](ClientCodeArchitecture.md). 최신 클라이언트 구조·수정 보고서는 Unity 프로젝트 Docs/ArchitectureReview.md와 Docs/ClientArchitectureReview.md에 있습니다.
 
 <!-- TOC -->
 
@@ -263,7 +263,7 @@ CSV 파서는 문법만, 검증기는 의미와 관계만, Store는 등록·캐�
 
 코드: {{S:protocol/escape/v1/game_api.proto}}, {{S:protocol/http/openapi.json}}, {{S:scripts/generate-http-api.cjs}}, {{S:scripts/sync-game-api.cjs}}, {{S:scripts/proto-tool.cjs}}, {{S:scripts/protocol-tool/Deployment.cjs}}.
 
-`.proto`가 메시지와 필드 번호·enum·oneof의 원본이고 OpenAPI가 HTTP 경로·operationId·미디어 타입·성공 outcome의 원본입니다. Swagger/OpenAPI를 사용하지만 현재 `/openapi.json`을 제공할 뿐 대화형 Swagger UI를 호스팅하는 라우트는 없습니다. Protobuf를 쓰므로 gRPC 서비스가 자동 구성되는 것도 아닙니다.
+`.proto`가 메시지와 필드 번호·enum·oneof의 원본이고 OpenAPI가 HTTP 경로·operationId·미디어 타입·성공 outcome의 원본입니다. 현재 `/openapi.json`과 대화형 `/swagger/` 및 필요한 정적 자원을 제공합니다. [Swagger 가이드](swagger-api-guide.md)를 참고합니다. Protobuf를 쓰므로 gRPC 서비스가 자동 구성되는 것도 아닙니다.
 
 ```mermaid
 flowchart LR
@@ -327,9 +327,9 @@ Decorator·Object Pool·CQRS 프레임워크·Event Sourcing은 현재 적용 �
 | 여러 게임 세션 | SessionService의 단일 모델 소유 구조·매칭·세션별 저장소부터 설계 |
 | P2P/호스트 이전 | 권한·복제·명령 순서·보안·호스트 교체 설계가 추가 필요 |
 
-`npm.cmd test`는 빌드 후 Node 검사, `csv:validate`는 현재 데이터 검사, `api:verify`는 계약과 HTTP 왕복 검사입니다. 검사 코드와 실제 Unity 두 PC·음성 장치·클라우드 상태를 구분합니다. 이 문서 작업에서는 프로젝트 기능 테스트를 새로 실행한 것으로 기록하지 않습니다.
+`npm.cmd test`는 빌드 후 Node 검사, `csv:validate`는 현재 데이터 검사, `api:verify`는 계약과 HTTP 왕복 검사입니다. 검사 코드와 실제 Unity 두 PC·음성 장치·클라우드 상태를 구분합니다. 2026-10-23 점검에서는 서버 176개와 실제 C# HTTP/Protobuf 22개가 통과했습니다. 이번에 클라우드를 재배포하거나 Unity Play를 실행한 것은 아닙니다.
 
-현재 접근 로그 미들웨어는 없습니다. `docker logs`에 참가·정답·문 요청이 모두 표시되는 구조가 아닙니다. 음성 중계, 전체 방 콘텐츠 완성, 제한 시간 승패, 자동 재접속 신분 복구도 서버 구현 완료로 간주하지 않습니다.
+현재 HttpAccessLogger와 HttpRequestLogContext가 입장·정답·문 등 요청 완료를 구조화해 stdout으로 기록합니다. Docker에서는 docker logs로 확인하며 배포 도구가 기본 10MB×3개 json-file 회전을 설정합니다. 게임 코드의 Error 전용 영속 파일 로거는 아직 구현하지 않았습니다. 음성 중계, 전체 방 콘텐츠 완성, 제한 시간 승패, 자동 재접속 신분 복구도 서버 구현 완료로 간주하지 않습니다.
 
 ### 10.2 코드 찾아보기
 

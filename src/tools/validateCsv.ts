@@ -13,7 +13,7 @@ async function main(): Promise<void> {
   console.log(`[CSV] ${report.fileCount}개 파일 / 오류 ${report.errorCount}개 / 경고 ${report.warningCount}개`);
   if (!report.isValid) { process.exitCode = 1; return; }
   const gameData = new CsvGameData(store);
-  console.log(`[CSV] 데이터 클래스 변환 완료: ${gameData.source.fileCount}개 파일`);
+  console.log(`[CSV] 런타임 정의 준비 완료: REGISTRY 활성 ${gameData.registry.filter(row => row.active).length}개 시트`);
 }
 
 if (require.main === module) main().catch(error => {
