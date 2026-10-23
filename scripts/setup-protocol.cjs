@@ -9,5 +9,8 @@ const result = spawnSync("dotnet", [
   "--source", "https://api.nuget.org/v3/index.json",
   ...(locked ? ["--locked-mode"] : [])
 ], { cwd: root, stdio: "inherit" });
-if (result.error) { console.error(result.error.message); process.exit(1); }
+if (result.error) {
+  console.error(result.error.message);
+  process.exit(1);
+}
 process.exitCode = result.status ?? 1;

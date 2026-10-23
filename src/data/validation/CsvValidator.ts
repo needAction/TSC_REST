@@ -20,7 +20,10 @@ export class CsvValidator {
   validate(data: CsvDataSet, signal?: AbortSignal): CsvValidationReport {
     signal?.throwIfAborted();
     const context = new CsvValidationContext(data, this.#schemas, signal);
-    for (const rule of this.#rules) { signal?.throwIfAborted(); rule.validate(context); }
+    for (const rule of this.#rules) {
+      signal?.throwIfAborted();
+      rule.validate(context);
+    }
     signal?.throwIfAborted();
     return new CsvValidationReport(data, context.captureIssues());
   }

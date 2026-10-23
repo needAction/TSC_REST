@@ -42,14 +42,23 @@ test('게임 API는 Protobuf 9개를 유지하고 운영 API만 JSON으로 문�
 test('Swagger 화면·정적 자원·문서는 실제 HTTP에서 제공되고 임의 파일을 노출하지 않는다', async t => {
   const entries = [];
   const server = createSessionHttpServer({}, new HttpAccessLogger({ write: entry => entries.push(entry) }));
-  server.listen(0, '127.0.0.1'); await once(server, 'listening');
-  t.after(() => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); }));
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(() => new Promise(resolve => {
+    server.closeAllConnections();
+    server.close(resolve);
+  }));
   const base = `http://127.0.0.1:${server.address().port}`;
   const redirect = await fetch(base + '/swagger', { redirect: 'manual' });
-  assert.equal(redirect.status, 302); assert.equal(redirect.headers.get('location'), '/swagger/'); await redirect.text();
-  const html = await fetch(base + '/swagger/'); const text = await html.text();
-  assert.equal(html.status, 200); assert.match(html.headers.get('content-type'), /text\/html/);
-  assert.match(text, /lang="ko"/); assert.match(text, /\/swagger\/swagger-ui-bundle.js/);
+  assert.equal(redirect.status, 302);
+  assert.equal(redirect.headers.get('location'), '/swagger/');
+  await redirect.text();
+  const html = await fetch(base + '/swagger/');
+  const text = await html.text();
+  assert.equal(html.status, 200);
+  assert.match(html.headers.get('content-type'), /text\/html/);
+  assert.match(text, /lang="ko"/);
+  assert.match(text, /\/swagger\/swagger-ui-bundle.js/);
   assert.equal(text.includes('https://'), false);
   const initializer = await (await fetch(base + '/swagger/swagger-initializer.js')).text();
   assert.match(initializer, /url: '\/openapi.json'/);
@@ -57,14 +66,19 @@ test('Swagger 화면·정적 자원·문서는 실제 HTTP에서 제공되고 �
   assert.match(initializer, /validatorUrl: null/);
   for (const file of ['swagger-ui.css', 'swagger-ui-bundle.js']) {
     const response = await fetch(base + '/swagger/' + file);
-    assert.equal(response.status, 200); assert.ok((await response.arrayBuffer()).byteLength > 1000);
+    assert.equal(response.status, 200);
+    assert.ok((await response.arrayBuffer()).byteLength > 1000);
     assert.match(response.headers.get('content-security-policy'), /connect-src 'self'/);
   }
   const spec = await (await fetch(base + '/openapi.json')).json();
   assert.deepEqual(spec, gameApiOpenApi);
   for (const invalid of ['/swagger/package.json', '/swagger/swagger-ui-bundle.js.map', '/swagger/%2e%2e/package.json']) {
-    const response = await fetch(base + invalid); await response.arrayBuffer(); assert.equal(response.status, 404);
+    const response = await fetch(base + invalid);
+    await response.arrayBuffer();
+    assert.equal(response.status, 404);
   }
-  const post = await fetch(base + '/swagger/', { method: 'POST' }); await post.arrayBuffer(); assert.equal(post.status, 404);
+  const post = await fetch(base + '/swagger/', { method: 'POST' });
+  await post.arrayBuffer();
+  assert.equal(post.status, 404);
   assert.ok(entries.some(entry => entry.operation === 'SwaggerUi' && entry.statusCode === 200));
 });

@@ -27,8 +27,12 @@ function fingerprint() {
   const tools = { tsProto: require("ts-proto/package.json").version, grpcTools: "2.76.0", csharpRuntime: "3.33.0" };
   const inputs = ["protocol/http/openapi.json", "scripts/generate-http-api.cjs", "scripts/protocol-tool/Deployment.cjs", "package-lock.json", "scripts/generate-protocol.cjs", "scripts/verify-protocol.cjs", "protocol/verification/csharp/ProtocolVerification.csproj",
     "protocol/verification/csharp/Program.cs", "protocol/verification/csharp/packages.lock.json"];
-  return { contractHash, tools, fingerprint: hash(Buffer.from(JSON.stringify({ contractHash, tools,
-    inputs: inputs.map(name => [name, hash(fs.readFileSync(path.join(root, name)))]) }))) };
+  return {
+    contractHash, tools, fingerprint: hash(Buffer.from(JSON.stringify({
+      contractHash, tools,
+      inputs: inputs.map(name => [name, hash(fs.readFileSync(path.join(root, name)))])
+    })))
+  };
 }
 
 function run(script, args) {
@@ -97,11 +101,19 @@ function main() {
   if (target !== "server") targets.push(new UnityTarget(resolveProject("clientProject"), outputs.csharp, verification));
   const writes = targets.flatMap(item => item.plan());
   for (const write of writes) console.log(`${write.changed ? "변경" : "동일"}: ${write.destination}`);
-  if (!apply) { console.log("변경 예정 목록입니다. 적용은 --apply를 추가하세요."); return; }
+  if (!apply) {
+    console.log("변경 예정 목록입니다. 적용은 --apply를 추가하세요.");
+    return;
+  }
   const backupRoot = path.join(cache, "backups", crypto.randomUUID());
   new Deployment(backupRoot).apply(writes);
   console.log("배포 완료. 기존 파일 백업: " + backupRoot);
   if (target !== "server") console.log("Unity 생성 어셈블리는 ESCAPE_PROTOBUF_RUNTIME 정의 전까지 비활성입니다. 런타임 구성 후 활성화하세요.");
 }
 
-try { main(); } catch (error) { console.error("[Protobuf 도구] " + error.message); process.exitCode = 1; }
+try {
+  main();
+} catch (error) {
+  console.error("[Protobuf 도구] " + error.message);
+  process.exitCode = 1;
+}

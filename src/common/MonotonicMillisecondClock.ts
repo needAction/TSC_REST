@@ -1,13 +1,13 @@
 import type { IMillisecondClock } from "./IMillisecondClock";
 
 export class MonotonicMillisecondClock
-    implements IMillisecondClock {
+  implements IMillisecondClock {
 
-        private readonly startedAt = process.hrtime.bigint();
+  private readonly startedAt = process.hrtime.bigint();
 
-        get elapsedMilliseconds(): number {
-            const elapsed = process.hrtime.bigint() - this.startedAt;
+  get elapsedMilliseconds(): number {
+    const elapsed = process.hrtime.bigint() - this.startedAt;
 
-            return Number(elapsed / 1_000_000n);
-        }
-    }
+    return Number(elapsed / 1_000_000n);
+  }
+}

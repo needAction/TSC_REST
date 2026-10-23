@@ -10,7 +10,7 @@ export class CsvTableMapping<T> {
 
 // 자료형 변환은 한 경계에서 재사용하며 값의 범위·참조 규칙은 검증기에 둡니다.
 export class CsvRowReader {
-  constructor(private readonly row: CsvRow, private readonly sheet: string) {}
+  constructor(private readonly row: CsvRow, private readonly sheet: string) { }
   text(column: string): string {
     const value = this.row.tryGet(column);
     if (value === undefined) throw this.error(column, "Missing column.");
@@ -21,13 +21,17 @@ export class CsvRowReader {
     if (value === undefined) throw this.error(column, "Expected a 32-bit integer.");
     return value;
   }
-  optionalInteger(column: string): number | null { return this.text(column) === "" ? null : this.integer(column); }
+  optionalInteger(column: string): number | null {
+    return this.text(column) === "" ? null : this.integer(column);
+  }
   number(column: string): number {
     const value = finiteNumber(this.text(column));
     if (value === undefined) throw this.error(column, "Expected a finite number.");
     return value;
   }
-  optionalNumber(column: string): number | null { return this.text(column) === "" ? null : this.number(column); }
+  optionalNumber(column: string): number | null {
+    return this.text(column) === "" ? null : this.number(column);
+  }
   flag(column: string): boolean {
     const value = this.text(column);
     if (value === "Y") return true;
@@ -46,5 +50,7 @@ export class CsvRowReader {
       return id;
     }));
   }
-  private error(column: string, reason: string): Error { return new Error(`CSV mapping: ${this.sheet}.csv:${this.row.sourceLine} [${column}] ${reason}`); }
+  private error(column: string, reason: string): Error {
+    return new Error(`CSV mapping: ${this.sheet}.csv:${this.row.sourceLine} [${column}] ${reason}`);
+  }
 }

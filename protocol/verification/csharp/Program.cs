@@ -45,12 +45,19 @@ foreach (var name in new[] { "success", "failure", "empty", "unknown", "default-
 }
 
 bool rejectedMalformed = false;
-try { QuerySessionResponse.Parser.ParseFrom(new byte[] { 10, 5, 1 }); }
-catch (InvalidProtocolBufferException) { rejectedMalformed = true; }
+try
+{
+    QuerySessionResponse.Parser.ParseFrom(new byte[] { 10, 5, 1 });
+}
+catch (InvalidProtocolBufferException)
+{
+    rejectedMalformed = true;
+}
 if (!rejectedMalformed) throw new Exception("잘린 바이너리를 허용했습니다.");
 
 // C#에서 독립적으로 생성한 성공/실패도 TS에서 확인합니다.
-var success = new QuerySessionResponse {
+var success = new QuerySessionResponse
+{
     Snapshot = new SessionSnapshot { SessionId = "csharp-session", Phase = SessionPhase.Waiting }
 };
 success.Snapshot.Players.Add(new PlayerSnapshot { PlayerId = "csharp-a", Role = PlayerRole.RoleA, SceneLoaded = true });

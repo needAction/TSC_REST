@@ -2,7 +2,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { ProtobufHttp, type ReplyKind } from "./ProtobufHttp";
 import { SessionErrorCode } from "../../generated/escape/v1/common";
 
-type ParticipantHttpResult = { success: true } | { success: false; code: string };
+type ParticipantHttpResult = { success: true } | {
+  success: false;
+  code: string
+};
 
 // HTTP 인증 헤더와 응답 형식은 이 경계에서만 처리합니다.
 export class ParticipantHttpHandler {

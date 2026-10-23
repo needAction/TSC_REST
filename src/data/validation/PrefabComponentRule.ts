@@ -13,7 +13,10 @@ export class CsvPrefabComponentRule implements ICsvValidationRule {
       const seen = new Set<number>();
       for (const token of value.split("|")) {
         const id = int32(token.trim());
-        if (id === undefined || id <= 0) { context.add("InvalidValue", table.name, row.sourceLine, "Components", token, "positive int32 IDs separated by |"); continue; }
+        if (id === undefined || id <= 0) {
+          context.add("InvalidValue", table.name, row.sourceLine, "Components", token, "positive int32 IDs separated by |");
+          continue;
+        }
         if (seen.has(id)) context.add("DuplicateKey", table.name, row.sourceLine, "Components", String(id));
         seen.add(id);
         if (!targets.some(target => target.find(String(id)))) context.add("MissingReference", table.name, row.sourceLine, "Components", String(id), "COMPONENT");

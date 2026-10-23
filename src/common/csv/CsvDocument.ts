@@ -12,7 +12,9 @@ export class CsvRow {
     return value;
   }
 
-  tryGet(columnName: string): string | undefined { return this.#values.get(columnName); }
+  tryGet(columnName: string): string | undefined {
+    return this.#values.get(columnName);
+  }
 }
 
 // 컬럼과 셀은 읽기 전용입니다. 숫자 변환이나 ID 규칙은 콘텐츠 정의 단계에서 결정합니다.

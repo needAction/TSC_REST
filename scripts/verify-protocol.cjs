@@ -19,10 +19,12 @@ try {
   if (stage) {
     compiledDirectory = path.join(stage, "compiled");
     const tsConfigPath = path.join(stage, "tsconfig.json");
-    fs.writeFileSync(tsConfigPath, JSON.stringify({ compilerOptions: {
-      target: "ES2022", module: "CommonJS", strict: true, skipLibCheck: true,
-      rootDir: path.join(stage, "typescript"), outDir: compiledDirectory, types: ["node"]
-    }, include: [path.join(stage, "typescript/**/*.ts")] }, null, 2));
+    fs.writeFileSync(tsConfigPath, JSON.stringify({
+      compilerOptions: {
+        target: "ES2022", module: "CommonJS", strict: true, skipLibCheck: true,
+        rootDir: path.join(stage, "typescript"), outDir: compiledDirectory, types: ["node"]
+      }, include: [path.join(stage, "typescript/**/*.ts")]
+    }, null, 2));
     run(process.execPath, ["node_modules/typescript/bin/tsc", "-p", tsConfigPath]);
     const csOutput = path.join(stage, "csharp-build");
     run("dotnet", ["build", "protocol/verification/csharp/ProtocolVerification.csproj", "--no-restore", "--verbosity", "quiet",
@@ -43,13 +45,17 @@ try {
   fs.mkdirSync(csFolder, { recursive: true });
 
   const cases = {
-    success: { outcome: { $case: "snapshot", snapshot: {
-      sessionId: "session-001", phase: SessionPhase.LOADING, unlockedRoomIds: [],
-      players: [
-        { playerId: "player-a", role: PlayerRole.ROLE_A, sceneLoaded: true },
-        { playerId: "player-b", role: PlayerRole.ROLE_B, sceneLoaded: false }
-      ]
-    }}},
+    success: {
+      outcome: {
+        $case: "snapshot", snapshot: {
+          sessionId: "session-001", phase: SessionPhase.LOADING, unlockedRoomIds: [],
+          players: [
+            { playerId: "player-a", role: PlayerRole.ROLE_A, sceneLoaded: true },
+            { playerId: "player-b", role: PlayerRole.ROLE_B, sceneLoaded: false }
+          ]
+        }
+      }
+    },
     failure: { outcome: { $case: "failure", failure: { code: SessionErrorCode.INVALID_PARTICIPANT } } },
     empty: { outcome: undefined },
     unknown: { outcome: { $case: "failure", failure: { code: 999 } } },

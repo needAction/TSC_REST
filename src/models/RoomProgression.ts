@@ -9,10 +9,14 @@ export class RoomProgression {
   private readonly unlocked = new Set<number>();
   private readonly solved = new Set<number>();
   private readonly permitted = new Set<number>();
-  constructor(private readonly data: CsvGameData, private readonly answerRules = new PuzzleAnswerRules()) { this.reset(); }
+  constructor(private readonly data: CsvGameData, private readonly answerRules = new PuzzleAnswerRules()) {
+    this.reset();
+  }
 
   reset(): void {
-    this.solved.clear(); this.unlocked.clear(); this.permitted.clear();
+    this.solved.clear();
+    this.unlocked.clear();
+    this.permitted.clear();
     for (const rooms of [this.data.roomsA, this.data.roomsB]) {
       const active = rooms.filter(room => room.active);
       const starts = active.filter(room => !active.some(other => other.next === room.id));
@@ -20,9 +24,14 @@ export class RoomProgression {
       this.unlocked.add(starts[0]!.id);
     }
   }
-  get unlockedRoomIds(): readonly number[] { return [...this.unlocked].sort((a, b) => a - b); }
+  get unlockedRoomIds(): readonly number[] {
+    return [...this.unlocked].sort((a, b) => a - b);
+  }
 
-  submit(role: PlayerRole, puzzleId: number, answers: readonly string[]): { accepted: boolean; correct: boolean } {
+  submit(role: PlayerRole, puzzleId: number, answers: readonly string[]): {
+    accepted: boolean;
+    correct: boolean
+  } {
     const puzzle = this.data.puzzles.find(row => row.id === puzzleId && row.active);
     const rooms = role === "A" ? this.data.roomsA : this.data.roomsB;
     if (!puzzle || !rooms.some(room => room.id === puzzle.solverRoom && room.active && this.unlocked.has(room.id)))

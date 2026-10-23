@@ -15,9 +15,11 @@ function fixture(t, profile = "local", overrides = {}) {
     for (const file of fs.readdirSync(root)) fs.unlinkSync(path.join(root, file));
     fs.rmdirSync(root);
   });
-  const values = { IMAGE_NAME: `escape-server:${profile}`, CONTAINER_NAME: `escape-${profile}`,
+  const values = {
+    IMAGE_NAME: `escape-server:${profile}`, CONTAINER_NAME: `escape-${profile}`,
     RUNTIME_ENV_FILE: ".env.runtime", HOST_PORT: "3001", CONTAINER_PORT: "3000",
-    ...(profile === "cloud" ? { SSH_TARGET: "ssh://deploy@cloud.example.com:2222", PUBLIC_HEALTH_URL: "https://game.example.com/health" } : {}), ...overrides };
+    ...(profile === "cloud" ? { SSH_TARGET: "ssh://deploy@cloud.example.com:2222", PUBLIC_HEALTH_URL: "https://game.example.com/health" } : {}), ...overrides
+  };
   const file = path.join(root, `.env.deploy-${profile}`);
   fs.writeFileSync(file, Object.entries(values).map(([key, value]) => `${key}=${value}`).join("\n"));
   fs.writeFileSync(path.join(root, ".env.runtime"), "HOST=0.0.0.0\nPORT=3000\n");
@@ -28,7 +30,11 @@ const imageId = "sha256:" + "a".repeat(64);
 const oldId = "b".repeat(12);
 const newId = "c".repeat(64);
 class FakeDocker {
-  constructor({ previous = true, fail } = {}) { this.calls = []; this.previous = previous; this.fail = fail; }
+  constructor({ previous = true, fail } = {}) {
+    this.calls = [];
+    this.previous = previous;
+    this.fail = fail;
+  }
   run(args, options) {
     this.calls.push({ args, options });
     const cmd = args[0] === "--context" || args[0] === "--host" ? args.slice(2) : args;
@@ -41,15 +47,23 @@ class FakeDocker {
     if (cmd[0] === "run" && cmd.includes("--detach")) return newId;
     return "";
   }
-  commands() { return this.calls.map(({args}) => args[0].startsWith("--") ? args.slice(2) : args); }
+  commands() {
+    return this.calls.map(({ args }) => args[0].startsWith("--") ? args.slice(2) : args);
+  }
 }
 function workflow(config, cli, options = {}) {
   const messages = [];
   const monitor = new HealthMonitor({ healthTimeoutMs: 20, healthIntervalMs: 5, healthRequestTimeoutMs: 5 },
-    () => monitor.now, async ms => { monitor.now += ms; });
+    () => monitor.now, async ms => {
+      monitor.now += ms;
+    });
   monitor.now = 0;
-  return { messages, deployment: new DockerDeployment(config, cli, { monitor, publicHealth: async () => true,
-    log: text => messages.push(text), ...options }) };
+  return {
+    messages, deployment: new DockerDeployment(config, cli, {
+      monitor, publicHealth: async () => true,
+      log: text => messages.push(text), ...options
+    })
+  };
 }
 
 test("Docker 프로필은 배포 설정과 서버 파일을 분리하고 정수 ms와 주소를 검증한다", t => {
@@ -62,17 +76,18 @@ test("Docker 프로필은 배포 설정과 서버 파일을 분리하고 정수 
   const cloud = fixture(t, "cloud").load();
   assert.equal(cloud.sshTarget, "ssh://deploy@cloud.example.com:2222");
   assert.equal(cloud.restart, "unless-stopped");
-  for (const changes of [ { HOST_PORT: "0" }, { CONTAINER_PORT: "65536" }, { HEALTH_TIMEOUT_MS: "1.5" },
-    { HEALTH_TIMEOUT_MS: "0" }, { HEALTH_INTERVAL_MS: "30001" }, { HEALTH_REQUEST_TIMEOUT_MS: "30001" },
-    { STOP_TIMEOUT_MS: "-1" }, { BIND_ADDRESS: "localhost" }, { CONTAINER_NAME: "-bad" },
-    { IMAGE_NAME: "bad;echo" }, { PUBLIC_HEALTH_URL: "https://user:password@host/health" },
-    { PUBLIC_HEALTH_URL: "http://host/other" }, { TYPO: "1" }, { SSH_TARGET: "ssh://remote" } ])
+  for (const changes of [{ HOST_PORT: "0" }, { CONTAINER_PORT: "65536" }, { HEALTH_TIMEOUT_MS: "1.5" },
+  { HEALTH_TIMEOUT_MS: "0" }, { HEALTH_INTERVAL_MS: "30001" }, { HEALTH_REQUEST_TIMEOUT_MS: "30001" },
+  { STOP_TIMEOUT_MS: "-1" }, { BIND_ADDRESS: "localhost" }, { CONTAINER_NAME: "-bad" },
+  { IMAGE_NAME: "bad;echo" }, { PUBLIC_HEALTH_URL: "https://user:password@host/health" },
+  { PUBLIC_HEALTH_URL: "http://host/other" }, { TYPO: "1" }, { SSH_TARGET: "ssh://remote" }])
     assert.throws(() => fixture(t, "local", changes).load());
-  for (const changes of [ { SSH_TARGET: "" }, { SSH_TARGET: "tcp://host:2375" },
-    { SSH_TARGET: "ssh://user:secret@host" }, { SSH_TARGET: "ssh://host/path" },
-    { PUBLIC_HEALTH_URL: "" }, { DOCKER_CONTEXT: "default" } ])
+  for (const changes of [{ SSH_TARGET: "" }, { SSH_TARGET: "tcp://host:2375" },
+  { SSH_TARGET: "ssh://user:secret@host" }, { SSH_TARGET: "ssh://host/path" },
+  { PUBLIC_HEALTH_URL: "" }, { DOCKER_CONTEXT: "default" }])
     assert.throws(() => fixture(t, "cloud", changes).load());
-  const missing = fixture(t); fs.unlinkSync(missing.file);
+  const missing = fixture(t);
+  fs.unlinkSync(missing.file);
   assert.throws(missing.load, /example/);
 });
 
@@ -120,7 +135,8 @@ test("로컬·클라우드의 사전 검사와 서비스 컨테이너는 설정�
 });
 
 test("정상 배포는 새 이미지와 실제 환경을 검증한 뒤 정확한 기존 컨테이너만 교체한다", async t => {
-  const config = fixture(t).load(); const cli = new FakeDocker();
+  const config = fixture(t).load();
+  const cli = new FakeDocker();
   const { deployment, messages } = workflow(config, cli);
   await deployment.execute();
   const commands = cli.commands();
@@ -158,9 +174,10 @@ test("첫 실행은 중지·제거를 생략하고, 중지 실패 시 제거·�
 });
 
 test("클라우드의 모든 Docker 작업은 지정한 원격 엔진을 사용한다", async t => {
-  const config = fixture(t, "cloud").load(); const cli = new FakeDocker();
+  const config = fixture(t, "cloud").load();
+  const cli = new FakeDocker();
   await workflow(config, cli).deployment.execute();
-  for (const {args} of cli.calls) assert.deepEqual(args.slice(0, 2), ["--host", config.sshTarget]);
+  for (const { args } of cli.calls) assert.deepEqual(args.slice(0, 2), ["--host", config.sshTarget]);
   assert.ok(cli.commands().find(cmd => cmd.includes("--detach")).includes("unless-stopped"));
 });
 
@@ -175,7 +192,7 @@ test("잘못된 엔진·교체 대상·새 실행 실패는 이후 작업을 중
       if (mode === "container" && cmd[0] === "container") return oldId + "\n" + newId;
       return result;
     };
-    const {deployment, messages} = workflow(fixture(t).load(), cli);
+    const { deployment, messages } = workflow(fixture(t).load(), cli);
     await assert.rejects(deployment.execute());
     assert.equal(messages.some(line => line.startsWith("[배포 완료]")), false);
     assert.equal(cli.commands().some(cmd => cmd[0] === "exec"), false);
@@ -184,7 +201,7 @@ test("잘못된 엔진·교체 대상·새 실행 실패는 이후 작업을 중
 });
 
 test("내부 또는 공개 상태 확인 실패를 성공으로 표시하지 않고 진단용 컨테이너를 남긴다", async t => {
-  for (const options of [ { publicHealth: async () => false }, {} ]) {
+  for (const options of [{ publicHealth: async () => false }, {}]) {
     const cli = new FakeDocker({ fail: Object.keys(options).length ? undefined : cmd => cmd[0] === "exec" });
     const { deployment, messages } = workflow(fixture(t).load(), cli, options);
     await assert.rejects(deployment.execute(), /상태 확인 실패/);
@@ -195,12 +212,24 @@ test("내부 또는 공개 상태 확인 실패를 성공으로 표시하지 않
 });
 
 test("상태 확인은 정수 ms로 재시도하고 제한 시간 후 종료한다", async () => {
-  let now = 0; let calls = 0; const sleeps = [];
+  let now = 0;
+  let calls = 0;
+  const sleeps = [];
   const settings = { healthTimeoutMs: 1000, healthIntervalMs: 300, healthRequestTimeoutMs: 400 };
-  const monitor = new HealthMonitor(settings, () => now, async ms => { sleeps.push(ms); now += ms; });
-  await assert.rejects(monitor.wait(async budget => { assert.equal(Number.isInteger(budget()), true); calls++; return false; }), /1000ms/);
-  assert.equal(now, 1000); assert.equal(calls, 4); assert.deepEqual(sleeps, [300,300,300,100]);
-  now = 0; calls = 0;
+  const monitor = new HealthMonitor(settings, () => now, async ms => {
+    sleeps.push(ms);
+    now += ms;
+  });
+  await assert.rejects(monitor.wait(async budget => {
+    assert.equal(Number.isInteger(budget()), true);
+    calls++;
+    return false;
+  }), /1000ms/);
+  assert.equal(now, 1000);
+  assert.equal(calls, 4);
+  assert.deepEqual(sleeps, [300, 300, 300, 100]);
+  now = 0;
+  calls = 0;
   await monitor.wait(async () => ++calls === 2);
   assert.equal(now, 300);
 });

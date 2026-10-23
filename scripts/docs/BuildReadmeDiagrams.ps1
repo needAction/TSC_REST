@@ -50,7 +50,9 @@ function Add-Text([string]$Text,[float]$X,[float]$Y,[float]$W,[float]$H,[float]$
         $ty += $lineHeight
     }
     [void]$script:svg.AppendLine('</text>')
-    $format.Dispose(); $brush.Dispose(); $font.Dispose()
+    $format.Dispose();
+    $brush.Dispose();
+    $font.Dispose()
 }
 function Add-Box([float]$X,[float]$Y,[float]$W,[float]$H,[string]$Title,[string]$Body,[string]$Fill = '#eef5fa') {
     $brush = [Drawing.SolidBrush]::new([Drawing.ColorTranslator]::FromHtml($Fill))
@@ -60,7 +62,8 @@ function Add-Box([float]$X,[float]$Y,[float]$W,[float]$H,[string]$Title,[string]
     [void]$script:svg.AppendLine("<rect x='$X' y='$Y' width='$W' height='$H' rx='8' fill='$Fill' stroke='#c1cfda' stroke-width='1.5'/>")
     Add-Text $Title ($X+12) ($Y+12) ($W-24) 37 22 -Bold -Center
     Add-Text $Body ($X+14) ($Y+49) ($W-28) ($H-53) 18 -Center
-    $brush.Dispose(); $pen.Dispose()
+    $brush.Dispose();
+    $pen.Dispose()
 }
 function Add-Arrow([double[][]]$Points,[string]$Label = '',[float]$LabelX = 0,[float]$LabelY = 0,[float]$LabelW = 0) {
     $pen = [Drawing.Pen]::new([Drawing.ColorTranslator]::FromHtml($script:line),2.4)
@@ -71,7 +74,8 @@ function Add-Arrow([double[][]]$Points,[string]$Label = '',[float]$LabelX = 0,[f
     $coords = ($Points | ForEach-Object {"$($_[0]),$($_[1])"}) -join ' '
     [void]$script:svg.AppendLine("<polyline points='$coords' fill='none' stroke='$script:line' stroke-width='2.4' marker-end='url(#arrow)'/>")
     if($Label) { Add-Text $Label $LabelX $LabelY $LabelW 36 19 -Center }
-    $pen.Dispose(); $cap.Dispose()
+    $pen.Dispose();
+    $cap.Dispose()
 }
 function Add-LifeLine([float]$X,[float]$Start,[float]$End) {
     $pen = [Drawing.Pen]::new([Drawing.ColorTranslator]::FromHtml('#b3c2ce'),1.5)
@@ -84,7 +88,8 @@ function Save-Diagram([string]$Name) {
     [void]$script:svg.AppendLine('</svg>')
     [IO.File]::WriteAllText((Join-Path $outputRoot "$Name.svg"),$script:svg.ToString(),[Text.UTF8Encoding]::new($false))
     $script:bitmap.Save((Join-Path $outputRoot "$Name.png"),[Drawing.Imaging.ImageFormat]::Png)
-    $script:g.Dispose(); $script:bitmap.Dispose()
+    $script:g.Dispose();
+    $script:bitmap.Dispose()
     Write-Output "$Name.png / $Name.svg"
 }
 

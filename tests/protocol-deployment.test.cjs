@@ -7,7 +7,9 @@ const { ProjectTarget, UnityTarget, Deployment, checkPath } = require("../script
 
 function fixture(callback) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "escape-proto-tool-"));
-  try { callback(root); }
+  try {
+    callback(root);
+  }
   finally {
     // 테스트가 만든 파일만 명시적으로 정리하고, 디렉터리는 비재귀 삭제합니다.
     function clear(folder) {
@@ -68,14 +70,14 @@ test("Git 줄바꿈 변환만 허용하고 실제 코드 수정과 계획 이후
   const original = new ProjectTarget("client", root, "generated", { "Test.cs": content("class Before {}\n") }, verification);
   new Deployment(path.join(root, "initial")).apply(original.plan());
   const file = path.join(root, "generated/Test.cs");
-  fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("\n","\r\n"));
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll("\n", "\r\n"));
   const next = new ProjectTarget("client", root, "generated", { "Test.cs": content("class After {}\n") }, verification);
   const writes = next.plan();
-  assert.equal(writes[0].changed,true);
-  fs.writeFileSync(file, fs.readFileSync(file,"utf8").replaceAll("\r\n","\n"));
-  assert.throws(()=>new Deployment(path.join(root,"stale")).apply(writes),/계획 이후/);
+  assert.equal(writes[0].changed, true);
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replaceAll("\r\n", "\n"));
+  assert.throws(() => new Deployment(path.join(root, "stale")).apply(writes), /계획 이후/);
   fs.writeFileSync(file, content("class UserEdit {}\n"));
-  assert.throws(()=>next.plan(),/수동 변경/);
+  assert.throws(() => next.plan(), /수동 변경/);
 }));
 
 test("중간 쓰기 실패 시 기존 파일을 되돌리고 백업을 보존한다", () => fixture(root => {
@@ -84,9 +86,16 @@ test("중간 쓰기 실패 시 기존 파일을 되돌리고 백업을 보존한
   const next = new ProjectTarget("server", root, "generated", { "A.ts": content("new"), "B.ts": content("new") }, verification);
   const rename = fs.renameSync;
   let calls = 0;
-  fs.renameSync = (...args) => { if (++calls === 2) throw new Error("simulated write failure"); return rename(...args); };
-  try { assert.throws(() => new Deployment(path.join(root, "failed-backup")).apply(next.plan()), /simulated/); }
-  finally { fs.renameSync = rename; }
+  fs.renameSync = (...args) => {
+    if (++calls === 2) throw new Error("simulated write failure");
+    return rename(...args);
+  };
+  try {
+    assert.throws(() => new Deployment(path.join(root, "failed-backup")).apply(next.plan()), /simulated/);
+  }
+  finally {
+    fs.renameSync = rename;
+  }
   assert.deepEqual(fs.readFileSync(path.join(root, "generated/A.ts")), content("old"));
   assert.deepEqual(fs.readFileSync(path.join(root, "generated/B.ts")), content("old"));
   assert.equal(fs.existsSync(path.join(root, "failed-backup/restore.json")), true);

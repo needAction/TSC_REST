@@ -18,7 +18,11 @@ const checkInternalHealth = `fetch('http://127.0.0.1:' + process.argv[1] + '/hea
 // 배포 순서를 소유하며 Docker 실행·접속 대상·상태 검사 구현은 주입받습니다.
 class DockerDeployment {
   constructor(config, cli, { monitor = new HealthMonitor(config), publicHealth = checkPublicHealth, log = console.log } = {}) {
-    this.config = config; this.cli = cli; this.monitor = monitor; this.publicHealth = publicHealth; this.log = log;
+    this.config = config;
+    this.cli = cli;
+    this.monitor = monitor;
+    this.publicHealth = publicHealth;
+    this.log = log;
   }
   describe() {
     const c = this.config;
@@ -69,12 +73,16 @@ class DockerDeployment {
           // 외부 주소가 다른 서버에 응답해도 새 컨테이너 자체가 정상이어야 통과합니다.
           run(["exec", containerId, "node", "-e", checkInternalHealth, String(c.containerPort), String(internalBudget)],
             { capture: true, timeoutMs: internalBudget });
-        } catch { return false; }
+        } catch {
+          return false;
+        }
         return this.publicHealth(c.publicHealthUrl, requestBudget());
       });
     } catch (error) {
       this.log("배포 상태 확인에 실패했습니다. 새 컨테이너를 남겨 두고 로그를 표시합니다.");
-      try { run(["logs", "--tail", "50", containerId]); } catch { /* 최초 오류를 유지합니다. */ }
+      try {
+        run(["logs", "--tail", "50", containerId]);
+      } catch { /* 최초 오류를 유지합니다. */ }
       throw error;
     }
     this.log(`[배포 완료] ${c.container} / ${c.publicHealthUrl} → status: ok`);

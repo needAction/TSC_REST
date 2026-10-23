@@ -7,7 +7,7 @@ import { PuzzleCommandRequest, RoomCommandRequest } from "../generated/escape/v1
 import { HttpRequestLogContext } from "./http/HttpRequestLogContext";
 
 export class SessionController {
-  constructor(private readonly sessions: SessionService) {}
+  constructor(private readonly sessions: SessionService) { }
 
   data(request: IncomingMessage, response: ServerResponse, sessionId: string): void {
     ParticipantHttpHandler.handle(request, response, token => this.sessions.data(sessionId, token), "data");
@@ -19,7 +19,9 @@ export class SessionController {
       HttpRequestLogContext.find(response)?.setPuzzleCommand(puzzleId, answers.length);
       ProtobufHttp.validateAnswers(answers);
       ParticipantHttpHandler.handle(request, response, token => this.sessions.submit(sessionId, token, puzzleId, answers), "puzzle");
-    } catch (error) { this.contentFailure(request, response, error); }
+    } catch (error) {
+      this.contentFailure(request, response, error);
+    }
   }
 
   async room(request: IncomingMessage, response: ServerResponse, sessionId: string, answer: boolean): Promise<void> {
@@ -31,7 +33,9 @@ export class SessionController {
       ProtobufHttp.validateAnswers(command.answers);
       ParticipantHttpHandler.handle(request, response,
         token => this.sessions.decideRoom(sessionId, token, command.roomNo, answer ? command.answers : undefined), "room");
-    } catch (error) { this.contentFailure(request, response, error); }
+    } catch (error) {
+      this.contentFailure(request, response, error);
+    }
   }
   private contentFailure(request: IncomingMessage, response: ServerResponse, error: unknown): void {
     request.resume();

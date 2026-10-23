@@ -10,7 +10,9 @@ class ManualScheduler {
   scheduleRepeated(callback, intervalMs) {
     const job = { callback, intervalMs, active: true };
     this.jobs.push(job);
-    return () => { job.active = false; };
+    return () => {
+      job.active = false;
+    };
   }
   fire() {
     for (const job of this.jobs) if (job.active) job.callback();
@@ -87,8 +89,8 @@ test("Node 타이머도 설정 간격으로 실행되고 중지하면 해제된�
 
 test("공통 주기 작업과 Node 어댑터는 잘못된 간격을 거부한다", () => {
   for (const interval of [0, -1, 0.5, NaN, Infinity]) {
-    assert.throws(() => new PeriodicTask(new ManualScheduler(), interval, () => {}));
-    assert.throws(() => new NodeIntervalScheduler().scheduleRepeated(() => {}, interval));
+    assert.throws(() => new PeriodicTask(new ManualScheduler(), interval, () => { }));
+    assert.throws(() => new NodeIntervalScheduler().scheduleRepeated(() => { }, interval));
   }
-  assert.throws(() => new NodeIntervalScheduler().scheduleRepeated(() => {}, 2147483648));
+  assert.throws(() => new NodeIntervalScheduler().scheduleRepeated(() => { }, 2147483648));
 });

@@ -68,7 +68,9 @@ function main() {
     env: environment,
     stdio: "inherit"
   });
-  const stop = signal => { if (!server.killed) server.kill(signal); };
+  const stop = signal => {
+    if (!server.killed) server.kill(signal);
+  };
   const onInterrupt = () => stop("SIGINT");
   const onTerminate = () => stop("SIGTERM");
   process.on("SIGINT", onInterrupt);
@@ -85,7 +87,9 @@ function main() {
 }
 
 if (require.main === module) {
-  try { main(); }
+  try {
+    main();
+  }
   catch (error) {
     console.error(`[실행 오류] ${error.message}`);
     process.exitCode = 1;

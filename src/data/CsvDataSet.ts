@@ -18,8 +18,12 @@ export class CsvDataSet {
     this.loadIssues = Object.freeze([...issues]);
     Object.freeze(this);
   }
-  entries(): IterableIterator<[string, CsvDocument]> { return this.#documents.entries(); }
-  tryGetDocument(sheet: string): CsvDocument | undefined { return this.#documents.get(sheet); }
+  entries(): IterableIterator<[string, CsvDocument]> {
+    return this.#documents.entries();
+  }
+  tryGetDocument(sheet: string): CsvDocument | undefined {
+    return this.#documents.get(sheet);
+  }
   getDocument(sheet: string): CsvDocument {
     const document = this.tryGetDocument(sheet);
     if (!document) throw new Error("CSV table not loaded: " + sheet);
@@ -33,8 +37,11 @@ export class CsvDataSet {
     for (const [sheet, location] of [...sources].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
       signal?.throwIfAborted();
       if (!sheet.trim() || names.has(sheet)) throw new Error("Empty or duplicate CSV table: " + sheet);
-      names.add(sheet); count++;
-      try { documents.set(sheet, await loader.load(location, signal)); }
+      names.add(sheet);
+      count++;
+      try {
+        documents.set(sheet, await loader.load(location, signal));
+      }
       catch (error) {
         signal?.throwIfAborted();
         if (error instanceof CsvParseError) issues.push(new CsvValidationIssue("ParseError", sheet, error.lineNumber, String(error.fieldNumber), "Error", [CsvErrorCode[error.code]]));

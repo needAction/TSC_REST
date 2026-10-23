@@ -11,8 +11,12 @@ export class CsvRoomRule implements ICsvValidationRule {
       let next = row.get("Next");
       while (next !== "0" && table.find(next)) {
         context.signal?.throwIfAborted();
-        if (visited.has(next)) { context.add("RoomCycle", table.name, row.sourceLine, "Next"); break; }
-        visited.add(next); next = table.find(next)!.get("Next");
+        if (visited.has(next)) {
+          context.add("RoomCycle", table.name, row.sourceLine, "Next");
+          break;
+        }
+        visited.add(next);
+        next = table.find(next)!.get("Next");
       }
     }
     for (const table of rooms) this.checkActiveChain(context, table);
@@ -89,7 +93,9 @@ export class CsvPuzzleRule implements ICsvValidationRule {
         if (row.get("SlotCount") !== puzzle.get("SlotCount")) context.add("ConsoleSlots", console.name, row.sourceLine, "SlotCount");
     }
   }
-  private findRoom(context: CsvValidationContext, id: string): CsvValidationTable | undefined { return context.tagged(TableTags.room).find(table => table.find(id)); }
+  private findRoom(context: CsvValidationContext, id: string): CsvValidationTable | undefined {
+    return context.tagged(TableTags.room).find(table => table.find(id));
+  }
   private checkRoom(context: CsvValidationContext, table: CsvValidationTable, puzzle: CsvRow, column: string, role: string): void {
     const room = this.findRoom(context, puzzle.get(column))?.find(puzzle.get(column));
     if (room && (room.get("PuzzleID") !== puzzle.get("ID") || room.get("Role") !== role)) context.add("PuzzleRoom", table.name, puzzle.sourceLine, column, role);

@@ -35,15 +35,21 @@ export type SessionParticipantFailure = {
 
 // ready는 씬 로딩 완료 보고입니다.
 export type ReadyResult =
-  | { success: true; snapshot: SessionSnapshot }
+  | {
+    success: true;
+    snapshot: SessionSnapshot
+  }
   | SessionParticipantFailure;
 
 // 참가자 인증 후 반환하는 읽기 전용 세션 조회 결과입니다.
 export type QueryResult =
-  | { success: true; snapshot: SessionSnapshot }
+  | {
+    success: true;
+    snapshot: SessionSnapshot
+  }
   | SessionParticipantFailure;
 
-  // 생존 확인은 시간만 갱신하고 스냅샷은 반환하지 않습니다.
+// 생존 확인은 시간만 갱신하고 스냅샷은 반환하지 않습니다.
 export type HeartbeatResult =
   | { success: true }
   | SessionParticipantFailure;

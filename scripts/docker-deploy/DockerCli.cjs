@@ -8,8 +8,10 @@ class DockerCli {
     this.environment = Object.fromEntries(Object.entries(inherited).filter(([key]) => !ignored.has(key.toUpperCase())));
   }
   run(args, { capture = false, timeoutMs } = {}) {
-    const result = spawnSync("docker", args, { cwd: this.root, env: this.environment, shell: false,
-      stdio: capture ? ["inherit", "pipe", "pipe"] : "inherit", encoding: "utf8", timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024 });
+    const result = spawnSync("docker", args, {
+      cwd: this.root, env: this.environment, shell: false,
+      stdio: capture ? ["inherit", "pipe", "pipe"] : "inherit", encoding: "utf8", timeout: timeoutMs, maxBuffer: 8 * 1024 * 1024
+    });
     if (result.error) throw new Error(result.error.code === "ENOENT" ? "Docker CLI가 없습니다. Docker 설치와 PATH를 확인하세요." : `Docker 명령 실행 실패: ${result.error.message}`);
     if (result.status !== 0) throw new Error(`Docker 명령 실패 (종료 코드 ${result.status ?? "없음"})${capture && result.stderr ? ": " + result.stderr.trim().slice(-4000) : ""}`);
     return capture ? result.stdout.trim() : "";
@@ -17,7 +19,9 @@ class DockerCli {
 }
 
 class LocalDockerTarget {
-  constructor(context) { this.context = context; }
+  constructor(context) {
+    this.context = context;
+  }
   resolve(cli) {
     const context = this.context || cli.run(["context", "show"], { capture: true });
     const info = JSON.parse(cli.run(["context", "inspect", context], { capture: true }));
@@ -29,8 +33,12 @@ class LocalDockerTarget {
 }
 
 class SshDockerTarget {
-  constructor(address) { this.address = address; }
-  resolve() { return ["--host", this.address]; }
+  constructor(address) {
+    this.address = address;
+  }
+  resolve() {
+    return ["--host", this.address];
+  }
 }
 
 module.exports = { DockerCli, LocalDockerTarget, SshDockerTarget };

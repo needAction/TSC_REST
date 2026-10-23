@@ -16,7 +16,10 @@ import type {
 } from "../contracts/SessionResults";
 
 type ParticipantValidationResult =
-  | { success: true; playerId: string }
+  | {
+    success: true;
+    playerId: string
+  }
   | SessionParticipantFailure;
 
 export class SessionService {

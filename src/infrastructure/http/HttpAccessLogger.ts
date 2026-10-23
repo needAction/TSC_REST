@@ -25,7 +25,7 @@ export class HttpAccessLogger {
     private readonly sink: ILogSink<HttpAccessLogEntry> = new ConsoleJsonLogSink(),
     private readonly identify?: (token: string) => AccessLogParticipant | undefined,
     private readonly clock: IMillisecondClock = new MonotonicMillisecondClock()
-  ) {}
+  ) { }
 
   observe(request: IncomingMessage, response: ServerResponse): HttpRequestLogContext {
     const context = HttpRequestLogContext.attach(response);
@@ -60,7 +60,9 @@ export class HttpAccessLogger {
         completion,
         result: completion === "aborted" ? "aborted" : details.result ?? (response.statusCode >= 400 ? "failure" : "success")
       };
-      try { this.sink.write(entry); } catch { /* 로그 출력 오류가 완료된 요청/서버를 중단하지 않게 합니다. */ }
+      try {
+        this.sink.write(entry);
+      } catch { /* 로그 출력 오류가 완료된 요청/서버를 중단하지 않게 합니다. */ }
     };
     const finished = () => record("finished");
     const closed = () => record(response.writableFinished ? "finished" : "aborted");

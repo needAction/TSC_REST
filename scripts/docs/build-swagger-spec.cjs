@@ -61,8 +61,10 @@ function protobufSchemas() {
     const text = fs.readFileSync(path.join(root, `protocol/escape/v1/${name}.proto`), 'utf8').replace(/\/\/[^\n]*/g, '');
     for (const match of blocks(text, 'enum')) {
       const values = [...match[2].matchAll(/\b(\w+)\s*=\s*(\d+)\s*;/g)];
-      schemas[match[1]] = { type: 'integer', format: 'int32', enum: values.map(row => Number(row[2])),
-        description: values.map(row => `${row[2]} = ${row[1]}`).join('\n\n'), 'x-enum-varnames': values.map(row => row[1]) };
+      schemas[match[1]] = {
+        type: 'integer', format: 'int32', enum: values.map(row => Number(row[2])),
+        description: values.map(row => `${row[2]} = ${row[1]}`).join('\n\n'), 'x-enum-varnames': values.map(row => row[1])
+      };
     }
     for (const match of blocks(text, 'message')) {
       const properties = {};
@@ -77,12 +79,20 @@ function protobufSchemas() {
         const description = fields[fieldName] ?? fieldName;
         // OpenAPI 3.0에서는 $ref의 형제 필드를 해석하지 않을 수 있어 allOf로 감쌉니다.
         properties[fieldName] = { ...(schema.$ref ? { allOf: [schema] } : schema), description, 'x-protobuf-field': Number(fieldNumber) };
-        if (fieldName === 'answers') { properties[fieldName].maxItems = 64; properties[fieldName].items.maxLength = 256; }
-        if (fieldName === 'room_no') { properties[fieldName].minimum = 1; properties[fieldName].maximum = 2147483647; }
+        if (fieldName === 'answers') {
+          properties[fieldName].maxItems = 64;
+          properties[fieldName].items.maxLength = 256;
+        }
+        if (fieldName === 'room_no') {
+          properties[fieldName].minimum = 1;
+          properties[fieldName].maximum = 2147483647;
+        }
       }
       const oneof = /oneof (\w+)/.exec(match[2]);
-      schemas[match[1]] = oneof ? { description: '표시용 논리 구조입니다. 실제 전송은 Protobuf 바이너리이며 oneof 결과 중 하나만 존재합니다.',
-        'x-protobuf-oneof': oneof[1], oneOf: Object.entries(properties).map(([name, schema]) => ({ type: 'object', required: [name], properties: { [name]: schema }, additionalProperties: false })) }
+      schemas[match[1]] = oneof ? {
+        description: '표시용 논리 구조입니다. 실제 전송은 Protobuf 바이너리이며 oneof 결과 중 하나만 존재합니다.',
+        'x-protobuf-oneof': oneof[1], oneOf: Object.entries(properties).map(([name, schema]) => ({ type: 'object', required: [name], properties: { [name]: schema }, additionalProperties: false }))
+      }
         : { type: 'object', description: 'Protobuf 메시지의 논리 구조입니다. JSON 전송 본문을 의미하지 않습니다.', properties };
     }
   }
@@ -90,21 +100,25 @@ function protobufSchemas() {
 }
 
 function binaryResponse(description) {
-  return { description, headers: { 'X-Request-Id': { description: '서버 접근 로그와 대응하는 요청 UUID입니다.', schema: { type: 'string' } } },
-    content: { 'application/protobuf': { schema: { type: 'string', format: 'binary' }, 'x-protobuf-message': 'escape.v1.GameApiResponse' } } };
+  return {
+    description, headers: { 'X-Request-Id': { description: '서버 접근 로그와 대응하는 요청 UUID입니다.', schema: { type: 'string' } } },
+    content: { 'application/protobuf': { schema: { type: 'string', format: 'binary' }, 'x-protobuf-message': 'escape.v1.GameApiResponse' } }
+  };
 }
 function buildDocument(input) {
   const spec = structuredClone(input);
-  spec.info = { title: '2인 협동 방탈출 서버 API', version: '1.0.0', description: [
-    '## 통신과 문서 읽기',
-    '게임 API 9개는 HTTP + Google Protobuf 바이너리(application/protobuf)입니다. /health와 /openapi.json만 JSON입니다. 아래 Schemas는 Protobuf 메시지의 설명용 논리 구조이며 게임 API가 JSON을 받는다는 뜻이 아닙니다.',
-    '## 실행 흐름',
-    '입장 → CSV 다운로드·검증·상대 입장 대기 → 각자 씬 로드 → 양쪽 ready → Playing → 정답 제출·문 허가 → 누적 방 해금 → 퇴장입니다. 기본 heartbeat는 3000ms, 서버 만료는 10000ms입니다.',
-    '## 인증·결과',
-    '입장 외 게임 요청은 x-participant-token 헤더가 필요합니다. 정답·문 value=false도 정상 200이며, 인증·입력·준비 오류는 GameApiResponse.failure와 HTTP 상태로 구분합니다. 게임 서버는 문 애니메이션·위치·음성을 중계하지 않습니다.',
-    '## 이 화면의 범위',
-    '이번 Swagger 화면은 문서 조회용입니다. 실행 버튼은 비활성화했습니다. Protobuf 실통신은 Unity 클라이언트와 npm run api:verify로 검사합니다. 서버는 단일 메모리 세션이며 재시작·재배포로 초기화됩니다.'
-  ].join('\n\n') };
+  spec.info = {
+    title: '2인 협동 방탈출 서버 API', version: '1.0.0', description: [
+      '## 통신과 문서 읽기',
+      '게임 API 9개는 HTTP + Google Protobuf 바이너리(application/protobuf)입니다. /health와 /openapi.json만 JSON입니다. 아래 Schemas는 Protobuf 메시지의 설명용 논리 구조이며 게임 API가 JSON을 받는다는 뜻이 아닙니다.',
+      '## 실행 흐름',
+      '입장 → CSV 다운로드·검증·상대 입장 대기 → 각자 씬 로드 → 양쪽 ready → Playing → 정답 제출·문 허가 → 누적 방 해금 → 퇴장입니다. 기본 heartbeat는 3000ms, 서버 만료는 10000ms입니다.',
+      '## 인증·결과',
+      '입장 외 게임 요청은 x-participant-token 헤더가 필요합니다. 정답·문 value=false도 정상 200이며, 인증·입력·준비 오류는 GameApiResponse.failure와 HTTP 상태로 구분합니다. 게임 서버는 문 애니메이션·위치·음성을 중계하지 않습니다.',
+      '## 이 화면의 범위',
+      '이번 Swagger 화면은 문서 조회용입니다. 실행 버튼은 비활성화했습니다. Protobuf 실통신은 Unity 클라이언트와 npm run api:verify로 검사합니다. 서버는 단일 메모리 세션이며 재시작·재배포로 초기화됩니다.'
+    ].join('\n\n')
+  };
   spec.servers = [{ url: '/', description: '이 Swagger 문서를 제공하는 현재 서버' }];
   spec.tags = Object.values(groups).map(name => ({ name }));
   spec.components.schemas = protobufSchemas();
@@ -113,23 +127,35 @@ function buildDocument(input) {
     if (operation['x-codegen-exclude']) continue;
     const details = descriptions[operation.operationId];
     if (!details) throw new Error(`API의 한글 설명을 추가하세요: ${operation.operationId}`);
-    operation.tags = [groups[details[0]]]; operation.summary = details[1]; operation.description = details[2];
+    operation.tags = [groups[details[0]]];
+    operation.summary = details[1];
+    operation.description = details[2];
     for (const parameter of operation.parameters ?? []) parameter.description = parameter.name === 'sessionId'
       ? '입장 응답에서 받은 session_id입니다.' : '기존 검증 경로의 PUZZLE.ID입니다. 방 번호와 다릅니다.';
     const statuses = operation.operationId === 'JoinSession' ? ['409', '500'] : ['400', '403', '404', ...details[3], '500'];
     const success = String(operation['x-success-status']);
-    operation.responses = { [success]: binaryResponse(`성공 결과: GameApiResponse.${operation['x-protobuf-outcome']}. ${operation.operationId === 'SubmitRoomAnswer' ? 'value는 정답 여부이며 door_allowed와 구분합니다.' : operation.operationId === 'CheckRoomDoor' ? 'value와 door_allowed는 문 사용 허가 여부입니다.' : ''}`),
+    operation.responses = {
+      [success]: binaryResponse(`성공 결과: GameApiResponse.${operation['x-protobuf-outcome']}. ${operation.operationId === 'SubmitRoomAnswer' ? 'value는 정답 여부이며 door_allowed와 구분합니다.' : operation.operationId === 'CheckRoomDoor' ? 'value와 door_allowed는 문 사용 허가 여부입니다.' : ''}`),
       ...Object.fromEntries(statuses.map(code => [code, binaryResponse(errorDescriptions[code])])),
-      default: binaryResponse('실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.') };
+      default: binaryResponse('실패 결과: GameApiResponse.failure. Schemas의 SessionErrorCode 정수 값을 확인하세요.')
+    };
     if (operation.requestBody) operation.requestBody.description = `Protobuf ${operation['x-protobuf-request']} 바이너리입니다. 최대 8192바이트. Schemas에서 필드 번호·자료형을 확인하세요. JSON 텍스트는 지원하지 않습니다.`;
     if (operation.operationId === 'CheckRoomDoor') operation.description += '\n\n1번 방 요청의 바이너리 예: 08 01 (room_no=1, answers 비움). DoorHinge나 프리팹 생성 성공 여부를 검사하는 API는 아닙니다.';
   }
-  spec.paths['/health'] = { get: { operationId: 'Health', 'x-codegen-exclude': true, tags: [groups.operations], summary: '서버 HTTP 수신 상태 확인',
-    description: 'status=ok는 서버 응답 가능 여부입니다. 두 참가자의 Playing·음성 송수신·클라 프리팹 생성을 보장하지 않습니다.', security: [],
-    responses: { 200: { description: '서버 응답 정상', content: { 'application/json': { schema: { type: 'object', required: ['status'], properties: { status: { type: 'string', enum: ['ok'] } } }, example: { status: 'ok' } } } } } } };
-  spec.paths['/openapi.json'] = { get: { operationId: 'GetOpenApi', 'x-codegen-exclude': true, tags: [groups.operations], summary: '이 서버의 OpenAPI 계약 조회',
-    description: 'Swagger UI가 표시하는 OpenAPI 3.0.3 문서입니다. 운영 경로는 게임용 C# 호출 코드 생성에서 제외합니다.', security: [],
-    responses: { 200: { description: '현재 생성된 OpenAPI 문서', content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } } } } } };
+  spec.paths['/health'] = {
+    get: {
+      operationId: 'Health', 'x-codegen-exclude': true, tags: [groups.operations], summary: '서버 HTTP 수신 상태 확인',
+      description: 'status=ok는 서버 응답 가능 여부입니다. 두 참가자의 Playing·음성 송수신·클라 프리팹 생성을 보장하지 않습니다.', security: [],
+      responses: { 200: { description: '서버 응답 정상', content: { 'application/json': { schema: { type: 'object', required: ['status'], properties: { status: { type: 'string', enum: ['ok'] } } }, example: { status: 'ok' } } } } }
+    }
+  };
+  spec.paths['/openapi.json'] = {
+    get: {
+      operationId: 'GetOpenApi', 'x-codegen-exclude': true, tags: [groups.operations], summary: '이 서버의 OpenAPI 계약 조회',
+      description: 'Swagger UI가 표시하는 OpenAPI 3.0.3 문서입니다. 운영 경로는 게임용 C# 호출 코드 생성에서 제외합니다.', security: [],
+      responses: { 200: { description: '현재 생성된 OpenAPI 문서', content: { 'application/json': { schema: { type: 'object', additionalProperties: true } } } } }
+    }
+  };
   return spec;
 }
 

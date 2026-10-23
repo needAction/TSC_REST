@@ -20,7 +20,11 @@ export class CsvParser {
     const fail = (code: CsvErrorCode, errorLine = line, column = fields.length + 1): never => {
       throw new CsvParseError(code, sourceName, errorLine, column);
     };
-    const endField = () => { fields.push(field); field = ""; state = FieldState.Start; };
+    const endField = () => {
+      fields.push(field);
+      field = "";
+      state = FieldState.Start;
+    };
     const endRecord = () => {
       endField();
       // 공백 줄은 무시하지만 따옴표로 지정한 빈 셀과 첫 칸이 빈 행은 보존합니다.
@@ -48,22 +52,51 @@ export class CsvParser {
       const char = text[index];
       const newlineSize = char === "\r" ? (text[index + 1] === "\n" ? 2 : 1) : char === "\n" ? 1 : 0;
       if (state === FieldState.Quoted) {
-        if (char === '"') { state = FieldState.AfterQuote; index++; }
-        else if (newlineSize) { field += text.slice(index, index + newlineSize); index += newlineSize; line++; }
-        else { field += char; index++; }
+        if (char === '"') {
+          state = FieldState.AfterQuote;
+          index++;
+        }
+        else if (newlineSize) {
+          field += text.slice(index, index + newlineSize);
+          index += newlineSize;
+          line++;
+        }
+        else {
+          field += char;
+          index++;
+        }
         continue;
       }
       if (state === FieldState.AfterQuote && char === '"') {
-        field += '"'; state = FieldState.Quoted; index++; continue;
+        field += '"';
+        state = FieldState.Quoted;
+        index++;
+        continue;
       }
-      if (char === ",") { endField(); hasSyntax = true; index++; continue; }
-      if (newlineSize) { endRecord(); index += newlineSize; line++; recordLine = line; continue; }
+      if (char === ",") {
+        endField();
+        hasSyntax = true;
+        index++;
+        continue;
+      }
+      if (newlineSize) {
+        endRecord();
+        index += newlineSize;
+        line++;
+        recordLine = line;
+        continue;
+      }
       if (state === FieldState.AfterQuote) fail(CsvErrorCode.InvalidQuote);
       if (char === '"') {
         if (state !== FieldState.Start) fail(CsvErrorCode.InvalidQuote);
-        state = FieldState.Quoted; hasSyntax = true; index++; continue;
+        state = FieldState.Quoted;
+        hasSyntax = true;
+        index++;
+        continue;
       }
-      field += char; state = FieldState.Unquoted; index++;
+      field += char;
+      state = FieldState.Unquoted;
+      index++;
     }
     if (state === FieldState.Quoted) fail(CsvErrorCode.UnclosedQuote);
     endRecord();

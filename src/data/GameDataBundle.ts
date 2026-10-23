@@ -3,7 +3,10 @@ import type { CsvDataSet } from "./CsvDataSet";
 
 export interface GameDataBundle {
   readonly version: string;
-  readonly tables: readonly { readonly name: string; readonly csv: string }[];
+  readonly tables: readonly {
+    readonly name: string;
+    readonly csv: string
+  }[];
 }
 
 // 디스크를 다시 읽지 않고 검증된 메모리 원본을 전송용 CSV로 직렬화합니다.

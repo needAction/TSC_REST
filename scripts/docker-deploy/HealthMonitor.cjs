@@ -3,7 +3,9 @@ const { setTimeout: delay } = require("node:timers/promises");
 // 모든 제한/간격은 정수 ms이며, 시각은 단조 증가 시계에서 얻습니다.
 class HealthMonitor {
   constructor(settings, nowMs = () => Number(process.hrtime.bigint() / 1000000n), sleep = delay) {
-    this.settings = settings; this.nowMs = nowMs; this.sleep = sleep;
+    this.settings = settings;
+    this.nowMs = nowMs;
+    this.sleep = sleep;
   }
   async wait(check) {
     const deadline = this.nowMs() + this.settings.healthTimeoutMs;
@@ -22,9 +24,14 @@ async function checkPublicHealth(url, timeoutMs) {
   if (timeoutMs < 1) return false;
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: "error" });
-    if (!response.ok) { await response.body?.cancel(); return false; }
+    if (!response.ok) {
+      await response.body?.cancel();
+      return false;
+    }
     return (await response.json()).status === "ok";
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 module.exports = { HealthMonitor, checkPublicHealth };

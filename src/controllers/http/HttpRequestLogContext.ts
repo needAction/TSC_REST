@@ -40,8 +40,12 @@ export class HttpRequestLogContext {
     this.contexts.set(response, context);
     return context;
   }
-  static find(response: ServerResponse): HttpRequestLogContext | undefined { return this.contexts.get(response); }
-  static release(response: ServerResponse): void { this.contexts.delete(response); }
+  static find(response: ServerResponse): HttpRequestLogContext | undefined {
+    return this.contexts.get(response);
+  }
+  static release(response: ServerResponse): void {
+    this.contexts.delete(response);
+  }
 
   setRoute(operation: string, route: string): void {
     this.details.operation = operation;
@@ -97,7 +101,7 @@ export class HttpRequestLogContext {
     }
     const snapshot = outcome.$case === "snapshot" ? outcome.snapshot
       : outcome.$case === "room" ? outcome.room.snapshot
-      : outcome.$case === "puzzle" ? outcome.puzzle.snapshot : undefined;
+        : outcome.$case === "puzzle" ? outcome.puzzle.snapshot : undefined;
     if (snapshot) {
       this.details.sessionId = snapshot.sessionId;
       this.details.phase = SessionPhase[snapshot.phase];

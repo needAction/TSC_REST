@@ -16,7 +16,9 @@ export class CsvValidationIssue {
     this.details = Object.freeze([...details]);
     Object.freeze(this);
   }
-  toString(): string { return `[${this.severity}] ${this.sheet}.csv:${this.line} [${this.column}] ${this.code} ${this.details.join(", ")}`; }
+  toString(): string {
+    return `[${this.severity}] ${this.sheet}.csv:${this.line} [${this.column}] ${this.code} ${this.details.join(", ")}`;
+  }
 }
 
 export class CsvValidationReport {
@@ -27,12 +29,20 @@ export class CsvValidationReport {
     this.errorCount = issues.filter(issue => issue.severity === "Error").length;
     Object.freeze(this);
   }
-  get fileCount(): number { return this.data.fileCount; }
-  get warningCount(): number { return this.issues.length - this.errorCount; }
-  get isValid(): boolean { return this.errorCount === 0; }
+  get fileCount(): number {
+    return this.data.fileCount;
+  }
+  get warningCount(): number {
+    return this.issues.length - this.errorCount;
+  }
+  get isValid(): boolean {
+    return this.errorCount === 0;
+  }
 }
 
-export interface ICsvValidationRule { validate(context: CsvValidationContext): void; }
+export interface ICsvValidationRule {
+  validate(context: CsvValidationContext): void;
+}
 
 export class CsvValidationTable {
   readonly usable: boolean;
@@ -47,8 +57,12 @@ export class CsvValidationTable {
     }
     Object.freeze(this);
   }
-  get rows(): readonly CsvRow[] { return this.usable ? this.document.rows : []; }
-  find(key: string): CsvRow | undefined { return this.#index.get(key); }
+  get rows(): readonly CsvRow[] {
+    return this.usable ? this.document.rows : [];
+  }
+  find(key: string): CsvRow | undefined {
+    return this.#index.get(key);
+  }
 }
 
 // 한 번의 검증에만 사용하는 작업 공간입니다. 이전 검증 상태나 I/O를 소유하지 않습니다.
@@ -60,9 +74,15 @@ export class CsvValidationContext {
       .map(([name, document]) => new CsvValidationTable(name, document, schemas.find(schema => schema.name === name))));
     this.#issues = [...data.loadIssues];
   }
-  tagged(tag: string): CsvValidationTable[] { return this.tables.filter(table => table.usable && table.schema?.tag === tag); }
-  find(name: string): CsvValidationTable | undefined { return this.tables.find(table => table.name === name && table.usable); }
-  captureIssues(): readonly CsvValidationIssue[] { return Object.freeze([...this.#issues]); }
+  tagged(tag: string): CsvValidationTable[] {
+    return this.tables.filter(table => table.usable && table.schema?.tag === tag);
+  }
+  find(name: string): CsvValidationTable | undefined {
+    return this.tables.find(table => table.name === name && table.usable);
+  }
+  captureIssues(): readonly CsvValidationIssue[] {
+    return Object.freeze([...this.#issues]);
+  }
   add(code: CsvValidationCode, table: string, line: number, column: string, ...details: string[]): void {
     this.#issues.push(new CsvValidationIssue(code, table, line, column, "Error", details));
   }
@@ -78,8 +98,12 @@ export class CsvValidationContext {
   }
 }
 
-export function isActive(row: CsvRow): boolean { return row.tryGet("Active") === undefined || row.get("Active") === "Y"; }
-export function csvList(value: string): string[] { return value === "-" || value === "" ? [] : value.split(",").map(item => item.trim()); }
+export function isActive(row: CsvRow): boolean {
+  return row.tryGet("Active") === undefined || row.get("Active") === "Y";
+}
+export function csvList(value: string): string[] {
+  return value === "-" || value === "" ? [] : value.split(",").map(item => item.trim());
+}
 export function finiteNumber(value: string): number | undefined {
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value.trim())) return undefined;
   const number = Number(value);

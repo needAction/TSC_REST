@@ -62,4 +62,7 @@ async function start(): Promise<void> {
   });
 
 }
-void start().catch(error => { console.error("서버 초기화 실패:", error); process.exitCode = 1; });
+void start().catch(error => {
+  console.error("서버 초기화 실패:", error);
+  process.exitCode = 1;
+});

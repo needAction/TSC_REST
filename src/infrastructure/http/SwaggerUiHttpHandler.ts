@@ -17,7 +17,10 @@ const initializer = `window.onload = function () {
 
 // 고정된 문서 자원만 제공하는 HTTP Adapter입니다. 임의 파일 경로나 외부 CDN을 사용하지 않습니다.
 export class SwaggerUiHttpHandler {
-  private readonly assets = new Map<string, { contentType: string; body: string | Buffer }>([
+  private readonly assets = new Map<string, {
+    contentType: string;
+    body: string | Buffer
+  }>([
     ["/swagger/", { contentType: "text/html; charset=utf-8", body: html }],
     ["/swagger/swagger-initializer.js", { contentType: "application/javascript; charset=utf-8", body: initializer }]
   ]);
@@ -31,8 +34,10 @@ export class SwaggerUiHttpHandler {
     if (pathname === "/swagger/swagger-ui.css" || pathname === "/swagger/swagger-ui-bundle.js") {
       if (!this.assets.has(pathname)) {
         const name = pathname.endsWith(".css") ? "swagger-ui.css" : "swagger-ui-bundle.js";
-        this.assets.set(pathname, { contentType: name.endsWith(".css") ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",
-          body: readFileSync(require.resolve("swagger-ui-dist/" + name)) });
+        this.assets.set(pathname, {
+          contentType: name.endsWith(".css") ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8",
+          body: readFileSync(require.resolve("swagger-ui-dist/" + name))
+        });
       }
     }
     const asset = this.assets.get(pathname);

@@ -20,7 +20,9 @@ function checkPath(root, relative) {
     try {
       if (fs.lstatSync(cursor).isSymbolicLink())
         throw new Error(`심볼릭 링크 배포 경로를 허용하지 않습니다: ${cursor}`);
-    } catch (error) { if (error.code !== "ENOENT") throw error; }
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
   }
   return cursor;
 }
@@ -63,12 +65,16 @@ class ProjectTarget {
       hashes[name] = nextHash;
       writes.push({ destination, root: this.root, relative, before: existing, content, changed: existing !== nextHash });
     }
-    const manifest = { owner: "escape-protocol-tool", target: this.name,
+    const manifest = {
+      owner: "escape-protocol-tool", target: this.name,
       contractHash: this.verification.contractHash, fingerprint: this.verification.fingerprint,
-      tools: this.verification.tools, files: hashes };
+      tools: this.verification.tools, files: hashes
+    };
     const content = Buffer.from(JSON.stringify(manifest, null, 2) + "\n");
-    writes.push({ destination: manifestPath, root: this.root, relative: manifestRelative,
-      before: currentHash(manifestPath), content, changed: currentHash(manifestPath) !== hash(content) });
+    writes.push({
+      destination: manifestPath, root: this.root, relative: manifestRelative,
+      before: currentHash(manifestPath), content, changed: currentHash(manifestPath) !== hash(content)
+    });
     return writes;
   }
 }
@@ -99,7 +105,9 @@ class UnityTarget extends ProjectTarget {
 }
 
 class Deployment {
-  constructor(backupRoot) { this.backupRoot = backupRoot; }
+  constructor(backupRoot) {
+    this.backupRoot = backupRoot;
+  }
 
   apply(writes) {
     const changed = writes.filter(write => write.changed);
@@ -128,8 +136,12 @@ class Deployment {
         fs.mkdirSync(path.dirname(write.destination), { recursive: true });
         const temp = write.destination + "." + crypto.randomUUID() + ".pending";
         fs.writeFileSync(temp, write.content);
-        try { fs.renameSync(temp, write.destination); }
-        finally { if (fs.existsSync(temp)) fs.unlinkSync(temp); }
+        try {
+          fs.renameSync(temp, write.destination);
+        }
+        finally {
+          if (fs.existsSync(temp)) fs.unlinkSync(temp);
+        }
         completed.push(write);
       }
     } catch (error) {

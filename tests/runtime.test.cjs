@@ -38,7 +38,11 @@ test("환경 파일 분리와 외부 환경변수 우선순위", () => {
     assert.throws(() => loadEnvironment("local", {}, root), /example/);
   } finally {
     for (const file of [local, shared]) {
-      try { unlinkSync(file); } catch (error) { if (error.code !== "ENOENT") throw error; }
+      try {
+        unlinkSync(file);
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
     }
     rmdirSync(root);
   }
@@ -82,7 +86,11 @@ test("빌드 실패 시 이전 dist 서버를 실행하지 않고 실패 코드�
     assert.equal(existsSync(marker), false);
   } finally {
     for (const file of [...files, "started.txt"]) {
-      try { unlinkSync(path.join(root, file)); } catch (error) { if (error.code !== "ENOENT") throw error; }
+      try {
+        unlinkSync(path.join(root, file));
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
     }
     for (const directory of directories.reverse()) rmdirSync(path.join(root, directory));
     rmdirSync(root);

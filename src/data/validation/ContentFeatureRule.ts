@@ -8,11 +8,20 @@ export class ContentFeatureRule implements ICsvValidationRule {
     if (components) for (const row of components.rows) {
       const script = row.get("Script"), raw = row.get("Params");
       const invalid = (column: string, message: string) => context.add("InvalidValue", components.name, row.sourceLine, column, message);
-      if (!(contentContract.features as readonly string[]).includes(script)) { invalid("Script", "미지원 기능: " + script); continue; }
+      if (!(contentContract.features as readonly string[]).includes(script)) {
+        invalid("Script", "미지원 기능: " + script);
+        continue;
+      }
       const required = (contentContract.parameters as Readonly<Record<string, readonly string[]>>)[script]?.[0] ?? null;
-      if (!required) { if (raw !== "-" && raw !== "") invalid("Params", "매개변수가 없는 기능은 -를 사용합니다."); continue; }
+      if (!required) {
+        if (raw !== "-" && raw !== "") invalid("Params", "매개변수가 없는 기능은 -를 사용합니다.");
+        continue;
+      }
       const parts = raw.split("=");
-      if (parts.length !== 2 || parts[0]!.trim() !== required) { invalid("Params", required + "=값 형식이 필요합니다."); continue; }
+      if (parts.length !== 2 || parts[0]!.trim() !== required) {
+        invalid("Params", required + "=값 형식이 필요합니다.");
+        continue;
+      }
       const value = parts[1]!.trim();
       if (required === "HighlightColor") {
         if (!/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value) && !(contentContract.colors as readonly string[]).includes(value.toLowerCase())) invalid("Params", "지원하는 색 이름 또는 #RRGGBB[AA]가 필요합니다.");
@@ -30,7 +39,7 @@ export class ContentFeatureRule implements ICsvValidationRule {
       const names = row.get("Components").split('|').map(id => components.find(id.trim())?.get("Script")).filter(Boolean);
       const fail = (text: string) => context.add("InvalidValue", prefabs.name, row.sourceLine, "Components", text);
       if (new Set(names).size !== names.length) fail("같은 기능을 중복 선언했습니다.");
-      if (names.some(n => ["CloseUpUI","DialLock","ButtonConsole","Door"].includes(n!)) && !names.includes("Interactable")) fail("Interactable이 필요합니다.");
+      if (names.some(n => ["CloseUpUI", "DialLock", "ButtonConsole", "Door"].includes(n!)) && !names.includes("Interactable")) fail("Interactable이 필요합니다.");
       if (names.some(n => n === "DialLock" || n === "ButtonConsole") && !names.includes("CloseUpUI")) fail("CloseUpUI가 필요합니다.");
       if (names.includes("DialLock") && names.includes("ButtonConsole")) fail("DialLock과 ButtonConsole은 함께 사용할 수 없습니다.");
     }

@@ -1,5 +1,5 @@
 const { test } = require("node:test");
-const {readReply}=require("./helpers/protobuf.cjs");
+const { readReply } = require("./helpers/protobuf.cjs");
 const assert = require("node:assert/strict");
 const { GameSession } = require("../dist/models/GameSession");
 const { SessionController } = require("../dist/controllers/SessionController");

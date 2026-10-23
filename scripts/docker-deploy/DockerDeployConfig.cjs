@@ -22,9 +22,13 @@ function integer(values, key, fallback, maximum = 2147483647) {
 
 function healthUrl(text) {
   let url;
-  try { url = new URL(text); } catch { throw new Error("PUBLIC_HEALTH_URL에 /health 주소를 입력하세요."); }
+  try {
+    url = new URL(text);
+  } catch {
+    throw new Error("PUBLIC_HEALTH_URL에 /health 주소를 입력하세요.");
+  }
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password ||
-      url.search || url.hash || url.pathname !== "/health")
+    url.search || url.hash || url.pathname !== "/health")
     throw new Error("PUBLIC_HEALTH_URL은 인증 정보·쿼리 없는 HTTP(S) /health 주소여야 합니다.");
   return url.href;
 }
@@ -55,10 +59,14 @@ class DockerDeployConfig {
     if (profile === "cloud") {
       if (context) throw new Error("cloud는 DOCKER_CONTEXT 대신 SSH_TARGET을 사용합니다.");
       let ssh;
-      try { ssh = new URL(values.SSH_TARGET); } catch { throw new Error("SSH_TARGET에 ssh://계정@호스트[:포트]를 입력하세요."); }
+      try {
+        ssh = new URL(values.SSH_TARGET);
+      } catch {
+        throw new Error("SSH_TARGET에 ssh://계정@호스트[:포트]를 입력하세요.");
+      }
       if (ssh.protocol !== "ssh:" || !ssh.hostname || ssh.password || ssh.search || ssh.hash ||
-          !["", "/"].includes(ssh.pathname) || (ssh.username && !/^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$/.test(ssh.username)) ||
-          (ssh.port && Number(ssh.port) === 0))
+        !["", "/"].includes(ssh.pathname) || (ssh.username && !/^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$/.test(ssh.username)) ||
+        (ssh.port && Number(ssh.port) === 0))
         throw new Error("SSH_TARGET에는 SSH 호스트 또는 SSH config 별칭을 입력하세요. 암호나 명령은 넣지 않습니다.");
       sshTarget = ssh.href.replace(/\/$/, "");
       if (!values.PUBLIC_HEALTH_URL) throw new Error("cloud의 PUBLIC_HEALTH_URL에 실제 서버 /health 주소를 입력하세요.");
@@ -74,12 +82,14 @@ class DockerDeployConfig {
     const healthRequestTimeoutMs = integer(values, "HEALTH_REQUEST_TIMEOUT_MS", 2000);
     if (healthIntervalMs > healthTimeoutMs || healthRequestTimeoutMs > healthTimeoutMs)
       throw new Error("상태 확인 간격과 요청 제한은 HEALTH_TIMEOUT_MS 이하여야 합니다.");
-    return Object.freeze({ profile, root, image, container, runtimeFile, context, sshTarget, restart,
+    return Object.freeze({
+      profile, root, image, container, runtimeFile, context, sshTarget, restart,
       hostPort, containerPort, bindAddress, publicHealthUrl, healthTimeoutMs, healthIntervalMs, healthRequestTimeoutMs,
       logMaxSizeMb: integer(values, "LOG_MAX_SIZE_MB", 10),
       logMaxFiles: integer(values, "LOG_MAX_FILES", 3),
       stopTimeoutMs: integer(values, "STOP_TIMEOUT_MS", 10000),
-      publish: `${family === 6 ? `[${bindAddress}]` : bindAddress}:${hostPort}:${containerPort}` });
+      publish: `${family === 6 ? `[${bindAddress}]` : bindAddress}:${hostPort}:${containerPort}`
+    });
   }
 }
 

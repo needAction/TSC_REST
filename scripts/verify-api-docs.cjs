@@ -14,5 +14,8 @@ async function verify() {
   assert.equal(gameApiOperations.length, 9);
   console.log(`Swagger/OpenAPI 검증 통과: API ${Object.keys(document.paths).length}개, Protobuf 설명 모델 ${Object.keys(document.components.schemas).length}개, 게임 호출 계약 ${gameApiOperations.length}개`);
 }
-if (require.main === module) verify().catch(error => { console.error('[Swagger 검증] ' + error.message); process.exitCode = 1; });
+if (require.main === module) verify().catch(error => {
+  console.error('[Swagger 검증] ' + error.message);
+  process.exitCode = 1;
+});
 module.exports = { verify };

@@ -43,8 +43,10 @@ function fixtureRow(sources, sheet, values) {
   sources[sheet] = headers.map(quote).join(',') + '\n' + headers.map(header => quote(values[header])).join(',');
 }
 function wireLength(sources, value) {
-  fixtureRow(sources, 'WIRE', { AnchorRef: parser.read(sources.ANCHOR_NONINTERACT).rows[0].get('ID'),
-    Color: 'Red', LengthM: value, IsAnswer: 'Y', Port: '1' });
+  fixtureRow(sources, 'WIRE', {
+    AnchorRef: parser.read(sources.ANCHOR_NONINTERACT).rows[0].get('ID'),
+    Color: 'Red', LengthM: value, IsAnswer: 'Y', Port: '1'
+  });
 }
 const at = (sheet, column, code) => issue => issue.sheet === sheet && issue.column === column && issue.severity === "Error" && (!code || issue.code === code);
 const checks = [
@@ -110,7 +112,8 @@ const checks = [
   ["Letter9 문자", x => cell(x, "LOCK", 4, "DialLetters", "A,A,A,A,A,A,A,A,A"), at("LOCK", "DialLetters", "InvalidLetters")]
 ];
 for (const [name, mutate, expected] of checks) test("데이터 검증: " + name, async () => {
-  const sources = { ...await originals }; mutate(sources);
+  const sources = { ...await originals };
+  mutate(sources);
   const report = validator.validate(await memory(sources));
   assert.ok(report.issues.some(expected), report.issues.join("\n"));
 });
@@ -120,7 +123,8 @@ test("data 폴더의 23개 CSV는 검증과 클래스 변환을 통과한다", a
   const report = validator.validate(data);
   assert.equal(report.fileCount, (await fs.readdir(folder)).filter(name => name.endsWith(".csv")).length);
   assert.deepEqual(report.issues.filter(issue => issue.severity === "Error"), []);
-  const store = new CsvDataStore(); store.register(data, validator);
+  const store = new CsvDataStore();
+  store.register(data, validator);
   const game = new CsvGameData(store);
   assert.equal(game.puzzles.find(row => row.id === 5001).slotCount, 4);
   assert.equal(game.puzzleSlots.length, data.getDocument("PUZZLE_SLOT").rows.length);
@@ -171,14 +175,23 @@ test("확장용 WIRE·ARROW는 헤더만 있어도 정상 등록되고 빈 목�
 
 test("검증·초기화·변환·재조회에서 실제 파일은 한 번만 읽는다", async () => {
   const source = new Utf8CsvFileSource(), reads = new Map();
-  const counting = { readText: async (file, signal) => { reads.set(file, (reads.get(file) ?? 0) + 1); return source.readText(file, signal); } };
+  const counting = {
+    readText: async (file, signal) => {
+      reads.set(file, (reads.get(file) ?? 0) + 1);
+      return source.readText(file, signal);
+    }
+  };
   const store = new CsvDataStore();
   const load = signal => readCsvDirectory(folder, signal, counting);
-  await store.initialize(load, validator); await store.initialize(load, validator);
-  validator.validate(store.data); validator.validate(store.data);
+  await store.initialize(load, validator);
+  await store.initialize(load, validator);
+  validator.validate(store.data);
+  validator.validate(store.data);
   const first = new CsvGameData(store), second = new CsvGameData(store);
-  assert.equal(reads.size, (await fs.readdir(folder)).filter(name => name.endsWith(".csv")).length); assert.ok([...reads.values()].every(value => value === 1));
-  assert.equal(first.source, store.data); assert.equal(first.puzzles, second.puzzles);
+  assert.equal(reads.size, (await fs.readdir(folder)).filter(name => name.endsWith(".csv")).length);
+  assert.ok([...reads.values()].every(value => value === 1));
+  assert.equal(first.source, store.data);
+  assert.equal(first.puzzles, second.puzzles);
   assert.equal(store.getTable(PuzzleData.table), first.puzzles);
 });
 
@@ -192,72 +205,118 @@ test("데이터 클래스 테이블은 함수와 객체에 그대로 주입할 �
 
 test("데이터 클래스·목록·리포트는 실행 중에도 읽기 전용이다", async () => {
   const data = await readCsvDirectory(folder), report = validator.validate(data), store = new CsvDataStore();
-  store.register(data, validator); const game = new CsvGameData(store);
-  assert.throws(() => { game.puzzles[0].id = 9; }, TypeError);
+  store.register(data, validator);
+  const game = new CsvGameData(store);
+  assert.throws(() => {
+    game.puzzles[0].id = 9;
+  }, TypeError);
   assert.throws(() => game.puzzles.pop(), TypeError);
   assert.throws(() => game.consoles[0].buttons.push("Other"), TypeError);
-  assert.throws(() => { game.source = undefined; }, TypeError);
+  assert.throws(() => {
+    game.source = undefined;
+  }, TypeError);
   assert.throws(() => report.issues.push("bad"), TypeError);
   assert.equal(game.puzzles[0].id, 5001);
 });
 
 test("실패한 재등록은 정상 원본·변환 캐시·주입된 값을 유지한다", async () => {
-  const store = new CsvDataStore(); const data = await readCsvDirectory(folder);
-  let events = 0; const off = store.onRegistered(snapshot => { events++; assert.equal(store.data, snapshot); assert.equal(store.validation.data, snapshot); });
-  store.register(data, validator); const game = new CsvGameData(store);
-  const bad = { ...await originals }; cell(bad, "PUZZLE", 0, "SlotCount", "99");
+  const store = new CsvDataStore();
+  const data = await readCsvDirectory(folder);
+  let events = 0;
+  const off = store.onRegistered(snapshot => {
+    events++;
+    assert.equal(store.data, snapshot);
+    assert.equal(store.validation.data, snapshot);
+  });
+  store.register(data, validator);
+  const game = new CsvGameData(store);
+  const bad = { ...await originals };
+  cell(bad, "PUZZLE", 0, "SlotCount", "99");
   assert.equal(store.register(await memory(bad), validator).isValid, false);
-  assert.equal(store.data, data); assert.equal(store.getTable(PuzzleData.table), game.puzzles); assert.equal(events, 1);
-  store.register(data, validator); assert.equal(events, 1);
-  const next = await memory(await originals); store.register(next, validator);
+  assert.equal(store.data, data);
+  assert.equal(store.getTable(PuzzleData.table), game.puzzles);
+  assert.equal(events, 1);
+  store.register(data, validator);
+  assert.equal(events, 1);
+  const next = await memory(await originals);
+  store.register(next, validator);
   assert.throws(() => store.getTable(PuzzleData.table));
   const replacement = new CsvGameData(store);
-  assert.notEqual(replacement.puzzles, game.puzzles); assert.equal(game.puzzles[0].id, 5001);
-  off(); store.register(data, validator); assert.equal(events, 2);
+  assert.notEqual(replacement.puzzles, game.puzzles);
+  assert.equal(game.puzzles[0].id, 5001);
+  off();
+  store.register(data, validator);
+  assert.equal(events, 2);
 });
 
 test("검증 전 변환과 중복 매핑을 거부하고 실패한 변환은 캐시에 남지 않는다", async () => {
-  const store = new CsvDataStore(); assert.throws(() => new CsvGameData(store));
+  const store = new CsvDataStore();
+  assert.throws(() => new CsvGameData(store));
   assert.throws(() => store.mapTable(PuzzleData.table));
   store.register(await readCsvDirectory(folder), validator);
-  store.mapTable(PuzzleData.table); assert.throws(() => store.mapTable(PuzzleData.table));
+  store.mapTable(PuzzleData.table);
+  assert.throws(() => store.mapTable(PuzzleData.table));
   let fail = true;
-  const mapping = new CsvTableMapping("CARD", row => { if (fail) throw new Error("conversion"); return row.get("ID"); });
-  assert.throws(() => store.mapTable(mapping)); assert.equal(store.tryGetTable(mapping), undefined);
-  fail = false; assert.equal(store.mapTable(mapping).length, 50);
+  const mapping = new CsvTableMapping("CARD", row => {
+    if (fail) throw new Error("conversion");
+    return row.get("ID");
+  });
+  assert.throws(() => store.mapTable(mapping));
+  assert.equal(store.tryGetTable(mapping), undefined);
+  fail = false;
+  assert.equal(store.mapTable(mapping).length, 50);
 });
 
 test("동시 초기화는 로딩을 공유하고 대기자 취소는 최초 로딩을 취소하지 않는다", async () => {
-  const store = new CsvDataStore(); let release, reads = 0;
+  const store = new CsvDataStore();
+  let release, reads = 0;
   const data = await readCsvDirectory(folder);
-  const load = () => { reads++; return new Promise(resolve => { release = resolve; }); };
+  const load = () => {
+    reads++;
+    return new Promise(resolve => {
+      release = resolve;
+    });
+  };
   const first = store.initialize(load, validator), second = store.initialize(load, validator);
   const cancellation = new AbortController();
-  const waiting = store.initialize(load, validator, cancellation.signal); cancellation.abort();
+  const waiting = store.initialize(load, validator, cancellation.signal);
+  cancellation.abort();
   await assert.rejects(waiting, { name: "AbortError" });
-  release(data); await Promise.all([first, second]);
-  assert.equal(reads, 1); assert.equal(store.data, data);
+  release(data);
+  await Promise.all([first, second]);
+  assert.equal(reads, 1);
+  assert.equal(store.data, data);
 });
 
 test("취소한 초기화의 늦은 결과는 등록하지 않고 재시도할 수 있다", async () => {
   const data = await readCsvDirectory(folder), store = new CsvDataStore(), cancellation = new AbortController();
   let release;
-  const task = store.initialize(() => new Promise(resolve => { release = resolve; }), validator, cancellation.signal);
-  cancellation.abort(); release(data);
-  await assert.rejects(task, { name: "AbortError" }); await new Promise(resolve => setImmediate(resolve));
+  const task = store.initialize(() => new Promise(resolve => {
+    release = resolve;
+  }), validator, cancellation.signal);
+  cancellation.abort();
+  release(data);
+  await assert.rejects(task, { name: "AbortError" });
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(store.hasData, false);
   assert.equal((await store.initialize(async () => data, validator)).isValid, true);
 });
 
 test("직접 등록한 최신 원본을 늦은 초기화가 덮어쓰지 않는다", async () => {
   const data = await readCsvDirectory(folder), replacement = await memory(await originals), store = new CsvDataStore();
-  let release; const task = store.initialize(() => new Promise(resolve => { release = resolve; }), validator);
-  store.register(replacement, validator); release(data); await task;
+  let release;
+  const task = store.initialize(() => new Promise(resolve => {
+    release = resolve;
+  }), validator);
+  store.register(replacement, validator);
+  release(data);
+  await task;
   assert.equal(store.data, replacement);
 });
 
 test("잘못된 CSV 등록 실패 후 초기화 재시도가 가능하다", async () => {
-  const bad = { ...await originals }; delete bad.PUZZLE;
+  const bad = { ...await originals };
+  delete bad.PUZZLE;
   const store = new CsvDataStore();
   assert.equal((await store.initialize(() => memory(bad), validator)).isValid, false);
   assert.equal((await store.initialize(() => readCsvDirectory(folder), validator)).isValid, true);
@@ -274,9 +333,14 @@ test("추가 규칙 주입·미등록 시트 일반 검사·선택 테이블 누
   assert.ok(injected.validate(await memory(await originals)).issues.some(issue => issue.details.includes("injected")));
   const unknown = { ...await originals, EXTRA: "ID,Value\n1,A\n1,B" };
   assert.ok(validator.validate(await memory(unknown)).issues.some(at("EXTRA", "ID", "DuplicateKey")));
-  const optional = { ...await originals }; delete optional.SOUND; delete optional.SOUND_LINK;
-  const store = new CsvDataStore(); assert.equal(store.register(await memory(optional), validator).isValid, true);
-  const game = new CsvGameData(store); assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
+  const optional = { ...await originals };
+  delete optional.SOUND;
+  delete optional.SOUND_LINK;
+  const store = new CsvDataStore();
+  assert.equal(store.register(await memory(optional), validator).isValid, true);
+  const game = new CsvGameData(store);
+  assert.deepEqual(game.sounds, []);
+  assert.deepEqual(game.soundLinks, []);
 });
 
 test("REGISTRY 비활성 시트는 파일이 있어도 런타임 행 변환과 번들에서 제외된다", async () => {
@@ -287,7 +351,8 @@ test("REGISTRY 비활성 시트는 파일이 있어도 런타임 행 변환과 �
   const store = new CsvDataStore();
   assert.equal(store.register(await memory(sources), validator).isValid, true);
   const game = new CsvGameData(store);
-  assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
+  assert.deepEqual(game.sounds, []);
+  assert.deepEqual(game.soundLinks, []);
   assert.equal(store.tryGetTable(SoundData.table), undefined);
   assert.equal(store.tryGetTable(SoundLinkData.table), undefined);
   assert.ok(game.source.getDocument('SOUND').rows.length > 0, '원본 검증 데이터는 보존');
@@ -304,9 +369,11 @@ test("REGISTRY에서 제거한 기존 시트도 원본 검증만 하고 런타�
   sources.REGISTRY = registry.headers.map(quote).join(',') + '\n' + registry.rows
     .filter(row => !['SOUND', 'SOUND_LINK'].includes(row.get('Sheet')))
     .map(row => registry.headers.map(header => quote(row.get(header))).join(',')).join('\n');
-  const store = new CsvDataStore(); assert.equal(store.register(await memory(sources), validator).isValid, true);
+  const store = new CsvDataStore();
+  assert.equal(store.register(await memory(sources), validator).isValid, true);
   const game = new CsvGameData(store);
-  assert.deepEqual(game.sounds, []); assert.deepEqual(game.soundLinks, []);
+  assert.deepEqual(game.sounds, []);
+  assert.deepEqual(game.soundLinks, []);
   assert.equal(store.tryGetTable(SoundData.table), undefined);
   assert.ok(game.source.getDocument('SOUND').rows.length > 0);
 });
@@ -316,11 +383,13 @@ test("GAME_CONFIG는 선언된 자료형으로만 숫자를 제공한다", async
   assert.equal(game.gameConfigs.find(row => row.id === 16001).asInt(), 900000);
   assert.equal(game.gameConfigs.find(row => row.id === 16030).asFloat(), 0.75);
   assert.throws(() => game.gameConfigs.find(row => row.id === 16002).asInt());
-  const signed = GameConfigData.table.convert(parser.read("ID,Value,Type,Unit\n1,-3,int,").rows[0]); assert.equal(signed.asInt(), -3);
+  const signed = GameConfigData.table.convert(parser.read("ID,Value,Type,Unit\n1,-3,int,").rows[0]);
+  assert.equal(signed.asInt(), -3);
 });
 
 test("손상 UTF-8·CSV·누락 파일은 원본 위치를 보존하고 등록을 막는다", async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "escape-csv-data-")); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "escape-csv-data-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(path.join(root, "BAD.csv"), Buffer.from([0xff, 0xfe, 0xff]));
   await fs.writeFile(path.join(root, "BROKEN.csv"), 'ID\n"unclosed');
   const data = await readCsvDirectory(root), report = validator.validate(data);
@@ -339,8 +408,10 @@ test("자료형 변환 오류는 시트·행·컬럼을 포함한다", () => {
 test("명령행 검증기는 기본 data 폴더를 검사하고 잘못된 폴더는 실패한다", () => {
   const script = path.resolve(__dirname, "../dist/tools/validateCsv.js");
   const good = spawnSync(process.execPath, [script], { cwd: os.tmpdir(), encoding: "utf8", timeout: 10000 });
-  assert.equal(good.status, 0, good.stderr); assert.match(good.stdout, /\d+개 파일 \/ 오류 0개/);
+  assert.equal(good.status, 0, good.stderr);
+  assert.match(good.stdout, /\d+개 파일 \/ 오류 0개/);
   assert.match(good.stdout, /런타임 정의 준비 완료: REGISTRY 활성 \d+개 시트/, "원본 파일 수와 활성 등록 수를 구분");
   const missing = spawnSync(process.execPath, [script, path.join(os.tmpdir(), "missing-" + process.pid)], { encoding: "utf8", timeout: 10000 });
-  assert.equal(missing.status, 1); assert.match(missing.stderr, /CSV 오류/);
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /CSV 오류/);
 });
