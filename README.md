@@ -1,6 +1,10 @@
 # 2인 협동 방탈출 HTTP 서버
 
-기준일: **2026-10-23**. 실제 구현과 이번 자동 검사 결과를 기준으로 설명합니다. [서버 구조 점검·수정 이유·코드 해설](docs/ArchitectureReview.md), [서버 상세 구조](docs/ServerCodeArchitecture.md), [서버·클라 종합 안내](docs/project-overview/README.md)를 함께 봅니다. 클라이언트 최신 문서는 Unity 프로젝트 `Docs/ArchitectureReview.md`와 `Docs/ClientArchitectureReview.md`에 있습니다.
+> 문서 대조일: **2026-10-26**. 현재 코드·설정을 기준으로 설명을 점검했습니다. 본문의 과거 검사 수치·실행 기록은 해당 날짜의 결과입니다. [현재 상태·문서 검토 범위](docs/문서_현행화_점검표.md)를 함께 확인합니다.
+
+서버를 처음 읽는 작업자는 [서버 플레이 흐름과 구조 통합 안내서](docs/서버_플레이_흐름과_구조_통합_안내서.md)에서 사용 언어·통신 방식의 이유부터 실제 플레이 흐름·코드·데이터·배포·로그까지 순서대로 확인할 수 있습니다.
+
+설명 기준일: **2026-10-26**. 현재 코드·설정을 기준으로 하며 아래 과거 검사 표의 날짜와 구분합니다. [서버 구조 점검·수정 이유·코드 해설](docs/ArchitectureReview.md), [서버 상세 구조](docs/ServerCodeArchitecture.md), [서버·클라 종합 안내](docs/project-overview/README.md)를 함께 봅니다. 클라이언트 최신 문서는 Unity 프로젝트 `Docs/ArchitectureReview.md`와 `Docs/ClientArchitectureReview.md`에 있습니다.
 
 ## 1. 역할과 현재 범위
 
@@ -63,7 +67,7 @@ flowchart TB
 | POST /sessions/{sessionId}/rooms/answer | 방 번호·정답으로 판정 |
 | POST /sessions/{sessionId}/rooms/door | 방 번호로 문 허가 확인 |
 | POST /sessions/{sessionId}/puzzles/{puzzleId}/submit | 기존 퍼즐 ID 디버그 제출 |
-| GET /health, /openapi.json, /swagger/ | 상태·계약·대화형 Swagger UI |
+| GET /health, /openapi.json, /swagger/ | 상태·계약·조회용 Swagger UI |
 
 정답/문 판정의 false는 정상 결과이며 통신·인증 실패와 구분합니다. 허가 후 문 개폐는 클라 캐시로 처리합니다. 7번 BothSolved에서 먼저 맞힌 사용자는 정답=true, doorAllowed=false가 정상이며 상대 완료를 기다립니다. 두 ready가 모여야 Playing이 됩니다.
 
@@ -77,7 +81,7 @@ Excel/스프레드시트 → UTF-8 CSV → 원본 메모리 로드 → 문법/�
 
 ROOM_A/B의 역할별 ID·RoomNo·Next·PuzzleID → PUZZLE/PUZZLE_SLOT 판정, ANCHOR의 역할/방/AnchorID·PrefabID → 클라 실제 Transform/프리팹, PREFAB.Components → COMPONENT 기능 선언으로 연결됩니다. ROOM.ID와 방 번호는 같은 값이 아닙니다.
 
-게임 사운드는 CSV를 사용하지 않고 클라 GameFeedback 에셋에서 관리합니다. SOUND/SOUND_LINK는 비활성이고 번들/런타임 주입에서 제외합니다. 미래 WIRE/ARROW를 사용할 때는 클래스/파일뿐 아니라 REGISTRY 활성 등록과 콘텐츠 참조도 필요합니다. 조명은 기존 앵커 스폰 구조를 따르며 Light Probe 작업은 보류입니다.
+게임 사운드는 CSV를 사용하지 않고 클라 GameFeedback 에셋에서 관리합니다. SOUND/SOUND_LINK는 비활성이고 번들/런타임 주입에서 제외합니다. 미래 WIRE/ARROW를 사용할 때는 클래스/파일뿐 아니라 REGISTRY 활성 등록과 콘텐츠 참조도 필요합니다. 조명은 기존 앵커 스폰 구조를 따르며 A/B별 프로브 베이크·실행 복원은 클라이언트에 연결되어 있습니다. 별도 ROOM_LIGHT_SPAWNTABLE은 사용하지 않습니다.
 
 ```powershell
 npm.cmd run csv:validate
@@ -125,4 +129,8 @@ sync는 생성/검사/계획을 만들고 `--apply`에서 로컬 관리 생성�
 
 현재 콘텐츠와 활성 23종을 보존한 고정 검사 코퍼스를 구분합니다. 원본/활성 파일 수와 과거 셀 수를 고정 성공 조건으로 사용하지 않습니다. 비활성·미등록 시트의 런타임 제외와 원본 보존 회귀를 추가했습니다.
 
-이번에는 실제 EC2 재배포·Unity Play·빌드·청취·GPU/Memory Profiler를 실행하지 않았습니다. 배포 도구 대역 검사를 클라우드 성공으로 설명하지 않습니다. 결과 UI 이후 영상 자원 해제와 배경음 재활성화는 실제 Unity 검토 항목입니다. Closeup 정적 미리보기의 매 프레임 렌더링은 측정 후 최적화할 후보입니다.
+위 표는 2026-10-23 당시 구조 점검 기록입니다. 이후 같은 날 프로브 A/B 실행·손 수명 검사와 실제 Stable 빌드 확인이 별도로 있었으며 현재 코드의 새 전체 빌드 결과와 구분합니다. 이번 문서 갱신은 EC2 재배포·Unity 실행·새 클라이언트 빌드·청취·프로파일링을 포함하지 않습니다. 배포 도구 대역 검사를 클라우드 성공으로 설명하지 않습니다. 결과 UI 이후 영상 자원 해제와 배경음 재활성화는 실제 Unity 검토 항목입니다. Closeup 정적 미리보기의 매 프레임 렌더링은 측정 후 최적화할 후보입니다.
+
+## 2026-10-26 문서 현행화
+
+현재 설정·손 애니메이션·객체 수명·프로브·문/엔딩과 과거 검사 기록을 대조했습니다. 이번 서버 전체 검사는 176개 통과했고 서버/클라이언트 CSV를 현재 공통 검증기로 확인했습니다. 원본 클라이언트 검사 구성 주의 사항과 이번에 새로 실행하지 않은 실기 범위는 [문서 현행화 점검표](docs/문서_현행화_점검표.md)를 따릅니다.
