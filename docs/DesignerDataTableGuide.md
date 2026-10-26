@@ -1,8 +1,10 @@
 # 기획 작업자용 데이터 테이블 적용 가이드
 
+> 문서 대조일: **2026-10-26**. 현재 코드·설정을 기준으로 설명을 점검했습니다. 본문의 과거 검사 수치·실행 기록은 해당 날짜의 결과입니다. [현재 상태·문서 검토 범위](문서_현행화_점검표.md)를 함께 확인합니다.
+
 기준: 2026-10-20. 코드에 새 오브젝트 이름이나 방별 조건을 추가하는 대신 **기존 기능을 데이터로 선택하고 연결**하는 작업 방법입니다.
 
-현재 완료한 범위는 **좌클릭 대상 탐색·강조·Closeup과 데이터 기반 정답 입력 UI·기존 Protobuf API 연결**입니다. 문 개폐와 실제 다음 방 이동은 후속 단위입니다. 새 정답 기능의 상세 규칙과 검사는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 따릅니다.
+현재 완료한 범위는 **좌클릭 대상 탐색·강조·Closeup과 데이터 기반 정답 입력 UI·기존 Protobuf API 연결**입니다. 문 허가·로컬 개폐·다음 방 누적 로드도 현재 연결되어 있습니다. 새 정답 기능의 상세 규칙과 검사는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 따릅니다.
 
 ## 1. 먼저 이해할 연결 구조
 
@@ -33,7 +35,7 @@ flowchart TD
 | 방·역할·위치 연결 | 해당 원본의 ANCHOR_INTERACT / ANCHOR_NONINTERACT | RoomNo, PlayerType, AnchorID, PrefabID, Active |
 | 역할별 방 진행 | ROOM_A / ROOM_B | RoomNo, RoomPrefabID, PuzzleID, ExitRule, Next |
 | 이동·조작 거리 | SILENT_Settings_Datatable → CHARACTER_STAT | InteractDistance 등 |
-| 퍼즐 입력 관계 | PUZZLE / PUZZLE_SLOT / LOCK / CONSOLE | 아래 7절 참고; UI 연결은 후속 작업 |
+| 퍼즐 입력 관계 | PUZZLE / PUZZLE_SLOT / LOCK / CONSOLE | 아래 7절과 정답 입력 가이드 참고; 입력 UI·API 연결됨 |
 | 클라이언트 로컬 테스트 입력 | Assets/11.CSV/*.csv | Excel에서 추출한 실행 데이터 |
 | 서버 접속 모드 입력 | 서버 프로젝트 data/*.csv | 서버 시작 시 로드하고 클라이언트로 전달하는 실행 데이터 |
 
@@ -66,7 +68,7 @@ COMPONENT의 현재 정의와 구현 범위:
 | 14002 | CloseUpUI | CamOffset=0,0.3,-0.5 | 전용 UI 패널과 모델 미리보기, 이동·시점 잠금 |
 | 14003 | DialLock | - | 숫자·문자·색 다이얼 입력 UI와 정답 요청 |
 | 14004 | ButtonConsole | - | 버튼 순서 입력 UI와 정답 요청 |
-| 14005 | Door | - | 기능 선언 인식. 허가 요청·개폐는 후속 |
+| 14005 | Door | - | 문 허가 서비스·경첩 기준 로컬 개폐 연결 |
 | 14006 | LetterSign | - | 메타데이터 인식. 별도 표시 동작은 후속 |
 | 14007 | ScreenText | - | 메타데이터 인식. 별도 표시 동작은 후속 |
 | 14009 | Spawn | - | 기존 플레이어 스폰 경로 사용. 클릭 대상이 아님 |
@@ -118,7 +120,7 @@ ID,RoomNo,PlayerType,AnchorID,PrefabID,Active
 
 현재 조작은 화면 중앙을 대상에 맞추고 좌클릭합니다. 먼저 만난 벽·다른 Collider 뒤의 오브젝트를 선택하지 않습니다. CloseUpUI 대상만 패널을 엽니다. UI가 열리면 WASD와 마우스 시점이 함께 중지되고 UI 클릭을 사용합니다. 돌아가기 또는 Esc로 닫습니다. 닫은 뒤 게임 화면을 클릭하면 커서를 다시 잡으며, 이 클릭이 동시에 대상을 작동시키지는 않습니다.
 
-CloseUpOpenMs, HeadBob 등 표에 존재하는 모든 컬럼이 이번 기능에서 소비되는 것은 아닙니다. 이번 패널은 즉시 열리며 열기 보간 시간은 아직 적용하지 않습니다. 폰트·캔버스·미리보기 레이어/해상도는 공통 표현 에셋 `Resources/InteractionPresentation`에서 개발자가 관리합니다. 콘텐츠별 동작 선택은 표에서 합니다.
+표의 모든 컬럼이 같은 소비자에서 사용되는 것은 아닙니다. HeadBob은 현재 보행 어댑터에서 사용합니다. 이번 패널은 즉시 열리며 열기 보간 시간은 아직 적용하지 않습니다. 폰트·캔버스·미리보기 레이어/해상도는 공통 표현 에셋 `Resources/InteractionPresentation`에서 개발자가 관리합니다. 콘텐츠별 동작 선택은 표에서 합니다.
 
 ## 6. Excel → CSV → 테스트 → 배포 순서
 
@@ -148,7 +150,7 @@ CloseUpOpenMs, HeadBob 등 표에 존재하는 모든 컬럼이 이번 기능에
 
 ## 7. 정답과 문을 연결할 때 준비할 데이터
 
-아래 데이터 구조와 서버 규칙은 존재합니다. **정답 입력 UI 연결은 추가 완료했으며 문 동작은 후속**입니다.
+아래 데이터 구조와 서버 규칙은 존재합니다. **정답 입력 UI·문 API·문 개폐·다음 방 로드가 연결되어 있습니다**입니다.
 
 ```text
 ROOM_A / ROOM_B.PuzzleID → PUZZLE.ID
@@ -174,7 +176,7 @@ ROOM_A / ROOM_B.Next → 같은 플레이어의 다음 ROOM.ID
 | 배치 후 기능 설정 오류 | Script 이름, 필수 기능 조합, Params 형식·색·CamOffset |
 | 미리보기가 없음 | 표시할 Mesh/Renderer, 전용 표현 에셋·레이어, Console 오류 |
 | 로컬과 서버 테스트 결과가 다름 | 어느 쪽 CSV를 수정했는지, 서버 재시작과 새 입장 여부 |
-| B에서 게임 준비가 실패함 | 기존 R01_LEDPanelPoint 미배치 문제. 데이터만 임의로 끄지 말고 아트 배치와 함께 해결 |
+| B에서 게임 준비가 실패함 | 현재 오류 로그의 AnchorID와 실제 역할별 프리팹을 대조. 과거 누락 사례를 현재 고정 실패로 간주하지 않음 |
 | CSV 추출 후 멀쩡하던 모델이 사라짐 | 원본 Excel과 현재 CSV의 ID·Path 불일치, 추출 제외 목록 |
 
 검증 성공은 참조·값 검사가 통과했다는 뜻입니다. 프리팹 모델의 실제 배치·Collider 정합성과 Play 조작, 아직 구현되지 않은 후속 기능까지 모두 통과했다는 뜻은 아닙니다.
@@ -183,6 +185,6 @@ ROOM_A / ROOM_B.Next → 같은 플레이어의 다음 ROOM.ID
 
 ## 정답 입력 API 연결 추가
 
-DialLock·ButtonConsole 입력 UI와 기존 Protobuf API 연결을 추가했습니다. 위 문서의 해당 기능 '후속' 표기는 첫 Closeup 단위 당시 기록이며, 현재 적용 컬럼·입력 방식·검사 절차는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 기준으로 합니다. 문 개폐와 실제 다음 방 연결은 계속 후속 범위입니다.
+DialLock·ButtonConsole 입력 UI와 기존 Protobuf API 연결을 추가했습니다. 위 문서의 해당 기능 '후속' 표기는 첫 Closeup 단위 당시 기록이며, 현재 적용 컬럼·입력 방식·검사 절차는 [정답 입력 API 연결 가이드](AnswerApiConnection.md)를 기준으로 합니다. 문 개폐와 실제 다음 방 연결도 현재 구현되어 있습니다. 마지막 방은 양쪽 정답 완료로 엔딩을 시작합니다.
 
 현재 PREFAB 13079·13080·13081은 다른 작업자분이 추가 중입니다. 정의가 완성되기 전 전체 로컬 검증 실패를 API 연결 실패로 판단하지 않습니다.

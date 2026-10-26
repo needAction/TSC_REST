@@ -1,10 +1,23 @@
 # 서버 코드·기능 계층과 설계 의도
 
+> 문서 대조일: **2026-10-26**. 현재 코드·설정을 기준으로 설명을 점검했습니다. 본문의 과거 검사 수치·실행 기록은 해당 날짜의 결과입니다. [현재 상태·문서 검토 범위](문서_현행화_점검표.md)를 함께 확인합니다.
+
 기준: 2026-10-23 로컬 서버 코드. 최신 점검·수정 근거는 [서버 구조 점검](ArchitectureReview.md)을 함께 봅니다. 구현 설명이며, 새 기능을 구현한 문서는 아닙니다. 각 절의 코드 링크는 확인한 실제 파일로 연결됩니다. 소스 변경 시 줄 번호와 데이터 예시는 달라질 수 있습니다.
 
 관련 문서: [전체 구조](project-overview/README.md), [클라이언트 초기 상세 기록](ClientCodeArchitecture.md). 최신 클라이언트 구조·수정 보고서는 Unity 프로젝트 Docs/ArchitectureReview.md와 Docs/ClientArchitectureReview.md에 있습니다.
 
-<!-- TOC -->
+## 목차
+
+- [1. 서버의 역할과 설계 개념](#1-서버의-역할과-설계-개념)
+- [2. 실행 계층 → 초기화와 종료](#2-실행-계층--초기화와-종료)
+- [3. 요청 수신 계층 → 라우터와 Controller](#3-요청-수신-계층--라우터와-controller)
+- [4. 응용 계층 → 세션 사용 사례 조정](#4-응용-계층--세션-사용-사례-조정)
+- [5. 도메인 계층 → 정답·문 허가·다음 방](#5-도메인-계층--정답문-허가다음-방)
+- [6. 데이터 계층 → 읽기·검증·타입 변환](#6-데이터-계층--읽기검증타입-변환)
+- [7. 데이터 관계 → 실제 방에서 코드까지](#7-데이터-관계--실제-방에서-코드까지)
+- [8. 자동화 계층 → 생성과 배포](#8-자동화-계층--생성과-배포)
+- [9. 디자인 패턴과 실제 적용 범위](#9-디자인-패턴과-실제-적용-범위)
+- [10. 검사·확장·현재 제한](#10-검사확장현재-제한)
 
 ## 1. 서버의 역할과 설계 개념
 
@@ -47,7 +60,7 @@ flowchart TB
 
 ### 2.1 `main.ts.start`의 조립 순서
 
-코드: {{S:src/main.ts}}.
+코드: [main.ts](../src/main.ts).
 
 1. `loadGameData(resolve(__dirname, "../data"))`: 실행 파일 위치 기준 CSV를 읽고 검증·모델 변환합니다. 실패하면 HTTP를 열지 않습니다.
 2. `loadServerConfig(process.env)`: HOST·PORT·만료/검사 간격을 검증합니다.
@@ -62,11 +75,11 @@ flowchart TB
 
 | 코드 | 입력 → 출력 | 주요 책임과 선택 의도 |
 |---|---|---|
-| {{S:src/config/ServerConfig.ts}} | 환경 문자열 → 검증된 설정 | 정수 포트·양의 ms·검사 간격 관계 검사. 기본값과 실행 프로필을 구분 |
-| {{S:src/common/IMillisecondClock.ts}} | `elapsedMilliseconds` 계약 | 테스트에서 가짜 시계를 주입할 수 있는 시간 포트 |
-| {{S:src/common/MonotonicMillisecondClock.ts}} | Node 단조 시간 → 정수 ms | 시스템 시각 변경의 영향을 생존 판정에서 분리 |
-| {{S:src/common/timing/PeriodicTask.ts}} | scheduler·간격·작업 | start/stop 책임. 게임 모델이 setInterval을 직접 호출하지 않음 |
-| {{S:src/infrastructure/timing/NodeIntervalScheduler.ts}} | 스케줄러 계약 → Node 타이머 | 런타임 의존성을 인프라 어댑터에 집중 |
+| [ServerConfig.ts](../src/config/ServerConfig.ts) | 환경 문자열 → 검증된 설정 | 정수 포트·양의 ms·검사 간격 관계 검사. 기본값과 실행 프로필을 구분 |
+| [IMillisecondClock.ts](../src/common/IMillisecondClock.ts) | `elapsedMilliseconds` 계약 | 테스트에서 가짜 시계를 주입할 수 있는 시간 포트 |
+| [MonotonicMillisecondClock.ts](../src/common/MonotonicMillisecondClock.ts) | Node 단조 시간 → 정수 ms | 시스템 시각 변경의 영향을 생존 판정에서 분리 |
+| [PeriodicTask.ts](../src/common/timing/PeriodicTask.ts) | scheduler·간격·작업 | start/stop 책임. 게임 모델이 setInterval을 직접 호출하지 않음 |
+| [NodeIntervalScheduler.ts](../src/infrastructure/timing/NodeIntervalScheduler.ts) | 스케줄러 계약 → Node 타이머 | 런타임 의존성을 인프라 어댑터에 집중 |
 
 기본 참가자 만료는 10000ms, 검사 주기는 500ms입니다. 실제 자리가 제거되는 시점은 주기 검사 또는 다음 입장·인증 요청 시점입니다. 10000ms 경계를 넘긴 토큰을 늦은 heartbeat로 되살리지 않습니다.
 
@@ -74,7 +87,7 @@ flowchart TB
 
 ### 3.1 라우터가 위치한 파일
 
-**클라이언트의 HTTP 요청을 처음 받는 라우터는 {{S:src/infrastructure/http/createSessionHttpServer.ts}}의 `createSessionHttpServer`입니다.**
+**클라이언트의 HTTP 요청을 처음 받는 라우터는 [createSessionHttpServer.ts](../src/infrastructure/http/createSessionHttpServer.ts)의 `createSessionHttpServer`입니다.**
 
 Node `createServer`의 콜백이 URL pathname을 구하고, OpenAPI에서 생성된 `gameApiOperations`의 HTTP 메서드·경로 정규식과 대조합니다. `operation.name` switch가 Controller의 메서드를 선택합니다. OpenAPI를 수정해도 새 사용 사례의 switch와 Controller 구현까지 자동 작성되지는 않습니다.
 
@@ -94,7 +107,7 @@ Node `createServer`의 콜백이 URL pathname을 구하고, OpenAPI에서 생성
 
 ### 3.2 Controller·인증 경계·직렬화의 분업
 
-코드: {{S:src/controllers/SessionController.ts}}, {{S:src/controllers/http/ParticipantHttpHandler.ts}}, {{S:src/controllers/http/ProtobufHttp.ts}}.
+코드: [SessionController.ts](../src/controllers/SessionController.ts), [ParticipantHttpHandler.ts](../src/controllers/http/ParticipantHttpHandler.ts), [ProtobufHttp.ts](../src/controllers/http/ProtobufHttp.ts).
 
 `SessionController.room`은 Protobuf를 해석하고 방 번호·답 목록을 검사한 다음 참가자 공통 처리에 위임합니다. 문 요청에 답이 들어 있으면 거절합니다. `ParticipantHttpHandler.handle`은 `x-participant-token`을 읽어 서비스 함수를 실행하고 응답 종류를 전달합니다. `ProtobufHttp.result`가 내부 결과를 생성 메시지로 바꾸고 전송합니다.
 
@@ -106,7 +119,7 @@ Node `createServer`의 콜백이 URL pathname을 구하고, OpenAPI에서 생성
 
 ### 4.1 `SessionService` Facade
 
-코드: {{S:src/services/SessionService.ts}}.
+코드: [SessionService.ts](../src/services/SessionService.ts).
 
 | 메서드 | 처리 순서 | 상태 변화 |
 |---|---|---|
@@ -124,7 +137,7 @@ Node `createServer`의 콜백이 URL pathname을 구하고, OpenAPI에서 생성
 
 ### 4.2 참가 모델과 준비 상태
 
-코드: {{S:src/models/GameSession.ts}}.
+코드: [GameSession.ts](../src/models/GameSession.ts).
 
 `addPlayer`는 정의한 역할 중 비어 있는 첫 역할을 선택합니다. `getSnapshot`은 내부 Player의 복사본을 반환합니다. `phase`는 저장된 별도 State 객체가 아니라 참가자 배열로 계산하는 상태입니다.
 
@@ -142,7 +155,7 @@ stateDiagram-v2
 
 ### 4.3 참가자 생존
 
-코드: {{S:src/services/ParticipantRegistry.ts}}, {{S:src/common/liveness/HeartbeatLease.ts}}.
+코드: [ParticipantRegistry.ts](../src/services/ParticipantRegistry.ts), [HeartbeatLease.ts](../src/common/liveness/HeartbeatLease.ts).
 
 `Map<token, {playerId, lease}>`로 인증과 생존을 묶습니다. 등록 시 토큰/플레이어 ID 중복을 막고, `getPlayerId`는 만료된 lease를 반환하지 않습니다. 서버는 heartbeat **수신 성공**을 기준으로 갱신하고, 클라는 heartbeat **정상 응답 수신**으로 연결을 감시합니다. 양방향 감시지만 동일 시각에 종료되는 동기 시계는 아닙니다.
 
@@ -150,7 +163,7 @@ stateDiagram-v2
 
 ### 5.1 세 종류의 진행 상태를 분리한 이유
 
-코드: {{S:src/models/RoomProgression.ts}}.
+코드: [RoomProgression.ts](../src/models/RoomProgression.ts).
 
 | Set | 키 | 의미 | 예시 |
 |---|---|---|---|
@@ -164,7 +177,7 @@ stateDiagram-v2
 
 `submit(role,puzzleId,answers)`는 활성 퍼즐, 해당 역할의 SolverRoom, SolverRoom 해금을 확인합니다. `PUZZLE_SLOT`을 `Slot` 순서로 정렬하고 `PuzzleAnswerRules.evaluate`로 판정합니다. 정답이면 solved를 기록하고 **제출자의 방에 대해** `checkDoor`를 호출합니다.
 
-코드: {{S:src/models/PuzzleAnswerRules.ts}}.
+코드: [PuzzleAnswerRules.ts](../src/models/PuzzleAnswerRules.ts).
 
 `IPuzzleAnswerRule.matches`가 Strategy 계약, `SlotAnswerRule`이 현재 구현, `PuzzleAnswerRules`의 Type→규칙 Map이 선택기입니다. `CardLetter`, `FrameCount`, `ArrowSequence`, `WireRank`, `TwistedFormula`, `TVLetter`, `ColourWord`가 모두 같은 슬롯 비교 규칙을 공유합니다. **7가지 별도 퍼즐 알고리즘이 구현된 상태는 아닙니다.** 비교는 개수 일치 및 순서별 대문자 변환 문자열 일치이며 자동 trim이나 숫자 변환을 하지 않습니다.
 
@@ -196,7 +209,7 @@ flowchart LR
     BUNDLE --> API[인증된 /data 응답]
 ```
 
-코드: {{S:src/infrastructure/data/loadGameData.ts}}, {{S:src/data/CsvDataSet.ts}}, {{S:src/data/CsvDataStore.ts}}, {{S:src/data/tables/CsvGameData.ts}}.
+코드: [loadGameData.ts](../src/infrastructure/data/loadGameData.ts), [CsvDataSet.ts](../src/data/CsvDataSet.ts), [CsvDataStore.ts](../src/data/CsvDataStore.ts), [CsvGameData.ts](../src/data/tables/CsvGameData.ts).
 
 CSV 파서는 문법만, 검증기는 의미와 관계만, Store는 등록·캐시·알림만, 행 모델은 타입 변환만 담당합니다. `RoomProgression`이 파일을 열거나 CSV 문자열을 해석하지 않는 이유입니다.
 
@@ -211,13 +224,13 @@ CSV 파서는 문법만, 검증기는 의미와 관계만, Store는 등록·캐�
 | `CsvDataStore.initialize` | 성공한 최초 초기화 재사용, 동시 호출이 같은 로딩 작업 공유. 최초 호출자가 실제 로드 취소 수명 소유 |
 | `register` | 검증 성공 후에만 원본 교체·캐시 clear·등록 완료 알림. 실패한 재등록은 이전 정상 상태 보존 |
 | `CsvTableMapping<T>` | 시트 이름과 행 변환 함수를 결합. 새 시트를 클래스에 연결하는 명시적 매핑 |
-| `CsvGameData` | 23개 readonly 테이블 구성. 행·배열 동결, 실제 매핑 캐시 재사용 |
+| `CsvGameData` | REGISTRY 활성 시트만 읽기 전용 타입 주입. 비활성/미등록은 빈 목록, 원본 검증 유지 |
 
 등록 이벤트는 `onRegistered`가 구독 해제 함수를 반환하는 Observer입니다. 현재 서버는 이 이벤트로 파일 감시나 hot reload를 자동 실행하지 않습니다. 새 데이터 정의를 기존 `RoomProgression`에 즉시 갈아끼우는 수명 정책도 연결되어 있지 않습니다.
 
 ### 6.3 검증 규칙의 계층
 
-코드: {{S:src/data/validation/CsvValidator.ts}}, {{S:src/data/validation/CsvSchema.ts}}, {{S:src/data/validation/CsvTableRules.ts}}, {{S:src/data/validation/CsvGameRules.ts}}, {{S:src/data/validation/CharacterStatRule.ts}}, {{S:src/data/validation/PrefabComponentRule.ts}}.
+코드: [CsvValidator.ts](../src/data/validation/CsvValidator.ts), [CsvSchema.ts](../src/data/validation/CsvSchema.ts), [CsvTableRules.ts](../src/data/validation/CsvTableRules.ts), [CsvGameRules.ts](../src/data/validation/CsvGameRules.ts), [CharacterStatRule.ts](../src/data/validation/CharacterStatRule.ts), [PrefabComponentRule.ts](../src/data/validation/PrefabComponentRule.ts).
 
 `CsvValidator`는 `ICsvValidationRule[]`를 순회하고 한 Context에 issue를 누적합니다. 스키마·참조·방·퍼즐·값 관계·캐릭터 단위·프리팹 기능 규칙을 조합합니다. 실패 즉시 다음 규칙으로 넘기는 Chain of Responsibility라기보다 **검증 규칙 파이프라인**입니다.
 
@@ -235,7 +248,7 @@ CSV 파서는 문법만, 검증기는 의미와 관계만, Store는 등록·캐�
 
 ### 6.4 CSV 번들의 의미
 
-코드: {{S:src/data/GameDataBundle.ts}}.
+코드: [GameDataBundle.ts](../src/data/GameDataBundle.ts).
 
 `createGameDataBundle`은 검증된 문서를 시트명 순서로 정렬하고 문자열을 CSV 인용 규칙으로 재직렬화합니다. `{name,csv}` 목록의 JSON 표현에 SHA-256을 적용한 version을 만듭니다. `SessionService` 생성 시 캐시하고 `/data`에서 Protobuf로 전달합니다.
 
@@ -245,23 +258,64 @@ CSV 파서는 문법만, 검증기는 의미와 관계만, Store는 등록·캐�
 
 ### 7.1 관계 지도와 키의 의미
 
-<!-- DATA_RELATIONS -->
+```mermaid
+flowchart LR
+    REG[REGISTRY 활성 정책] --> ROOM[ROOM_A / ROOM_B]
+    ROOM -->|PuzzleID| PUZZLE[PUZZLE]
+    PUZZLE -->|SolverRoom / ClueRoom| ROOM
+    SLOT[PUZZLE_SLOT] -->|PuzzleID| PUZZLE
+    PUZZLE -->|InputAnchor| ANCHOR[ANCHOR_INTERACT]
+    ROOM -->|RoomPrefabID| PREFAB[PREFAB]
+    ANCHOR -->|PrefabID| PREFAB
+    NORMAL[ANCHOR_NONINTERACT] -->|PrefabID| PREFAB
+    PREFAB -->|Components| COMPONENT[COMPONENT]
+    ROOM -->|Next| NEXT[역할별 다음 ROOM.ID]
+```
+
+RoomNo는 화면 방 번호, ROOM.ID는 A/B를 구분한 고유 번호입니다. 참가자 A/B와 ROOM.Role의 Clue/Solver도 다른 구분입니다.
 
 ### 7.2 1번 방의 실제 데이터 추적
 
-<!-- ROOM_EXAMPLE -->
+B 1번 방은 ROOM_B.ID=1002, RoomNo=1, PuzzleID=5001, Next=1004입니다. A 1번 방 ID는 1001이고 같은 퍼즐의 단서 방입니다. PUZZLE 5001의 SolverRoom=1002, ClueRoom=1001, InputAnchor=2030이며 슬롯 4개를 비교합니다.
+
+B의 정답 제출은 B의 문과 1004를 먼저 해금합니다. A는 자기 문 허가 확인 뒤 1003을 해금합니다. 마지막은 A 1013/퍼즐 5007, B 1014/퍼즐 5008, BothSolved·Next=0이며 공동 완료 후 영상을 시작합니다.
 
 서버는 예시의 `LOCK.DialFace`를 이용해 UI를 만들지 않습니다. UI는 클라이언트가 만들고 서버는 `PUZZLE.Type`의 규칙 및 `PUZZLE_SLOT.Answer`로 판정합니다. 이 분리 덕분에 UI 표현 변경이 인증·진행 로직으로 전파되지 않습니다.
 
-### 7.3 현재 23개 테이블의 컬럼·연결·사용 상태
+### 7.3 원본 24개와 활성 시트의 컬럼·사용 상태
 
-<!-- TABLE_CATALOG -->
+| 테이블 | 상태 | 행 수 | 컬럼 |
+|---|---|---:|---|
+| [ANCHOR_INTERACT](../data/ANCHOR_INTERACT.csv) | 활성 | 16 | `ID`, `RoomNo`, `PlayerType`, `AnchorID`, `PrefabID`, `Active` |
+| [ANCHOR_NONINTERACT](../data/ANCHOR_NONINTERACT.csv) | 활성 | 35 | `ID`, `RoomNo`, `PlayerType`, `AnchorID`, `PrefabID`, `Active` |
+| [ARROW](../data/ARROW.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Order`, `Dir`, `IsAnswer` |
+| [CARD](../data/CARD.csv) | 비활성·미등록 원본 | 50 | `ID`, `AnchorRef`, `CardNo`, `TopMark`, `BottomMark`, `IsAnswer` |
+| [CHARACTER_STAT](../data/CHARACTER_STAT.csv) | 활성 | 1 | `ID`, `WalkSpeed`, `Acceleration`, `Deceleration`, `MouseSensitivity`, `PitchLimit`, `FOV`, `EyeHeight`, `CapsuleHeight`, `CapsuleRadius`, `StepOffset`, `InteractDistance`, `CloseUpOpenMs`, `HeadBob` |
+| [COLOR_LETTER](../data/COLOR_LETTER.csv) | 활성 | 6 | `ID`, `PuzzleID`, `Letter`, `Color`, `SignAnchor` |
+| [COMPONENT](../data/COMPONENT.csv) | 활성 | 8 | `ID`, `Script`, `Params` |
+| [CONSOLE](../data/CONSOLE.csv) | 활성 | 1 | `AnchorRef`, `SlotCount`, `Buttons` |
+| [FORMULA](../data/FORMULA.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Symbol`, `IsAnswer` |
+| [FRAME](../data/FRAME.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Color`, `Wall`, `IsAnswer` |
+| [GAME_CONFIG](../data/GAME_CONFIG.csv) | 활성 | 5 | `ID`, `Value`, `Type`, `Unit` |
+| [LOCK](../data/LOCK.csv) | 활성 | 7 | `AnchorRef`, `DialFace`, `DialLetters`, `DisplayFace` |
+| [PAPER](../data/PAPER.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Equation1`, `Equation2`, `IsAnswer` |
+| [PREFAB](../data/PREFAB.csv) | 활성 | 53 | `ID`, `Path`, `Group`, `Components` |
+| [PUZZLE](../data/PUZZLE.csv) | 활성 | 8 | `ID`, `Type`, `SolverRoom`, `ClueRoom`, `InputAnchor`, `SlotCount`, `Active` |
+| [PUZZLE_SLOT](../data/PUZZLE_SLOT.csv) | 활성 | 44 | `ID`, `PuzzleID`, `Slot`, `Display`, `Answer` |
+| [REGISTRY](../data/REGISTRY.csv) | 활성 | 16 | `ID`, `Sheet`, `File`, `Parent`, `ParentKey`, `Uses`, `LoadOrder`, `Required`, `Active` |
+| [ROOM_A](../data/ROOM_A.csv) | 활성 | 7 | `ID`, `RoomNo`, `Role`, `RoomPrefabID`, `PuzzleID`, `TargetMs`, `ExitRule`, `Active`, `Next` |
+| [ROOM_B](../data/ROOM_B.csv) | 활성 | 7 | `ID`, `RoomNo`, `Role`, `RoomPrefabID`, `PuzzleID`, `TargetMs`, `ExitRule`, `Active`, `Next` |
+| [ROOM_LIGHT_SPAWNTABLE](../data/ROOM_LIGHT_SPAWNTABLE.csv) | 비활성·미등록 원본 | 14 | `RoomID`, `PrefabID`, `AnchorID` |
+| [SOUND](../data/SOUND.csv) | 비활성·미등록 원본 | 28 | `ID`, `Category`, `Path`, `Loop`, `Volume`, `MinDist`, `MaxDist`, `Bus`, `CooldownMs`, `Active` |
+| [SOUND_LINK](../data/SOUND_LINK.csv) | 비활성·미등록 원본 | 49 | `ID`, `Trigger`, `TargetSheet`, `TargetID`, `SoundID`, `Active` |
+| [TV](../data/TV.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Letter`, `Number`, `IsAnswer` |
+| [WIRE](../data/WIRE.csv) | 비활성·미등록 원본 | 0 | `AnchorRef`, `Color`, `LengthM`, `IsAnswer`, `Port` |
 
 ## 8. 자동화 계층 → 생성과 배포
 
 ### 8.1 API 계약 생성은 서버 실행과 다른 작업
 
-코드: {{S:protocol/escape/v1/game_api.proto}}, {{S:protocol/http/openapi.json}}, {{S:scripts/generate-http-api.cjs}}, {{S:scripts/sync-game-api.cjs}}, {{S:scripts/proto-tool.cjs}}, {{S:scripts/protocol-tool/Deployment.cjs}}.
+코드: [game_api.proto](../protocol/escape/v1/game_api.proto), [openapi.json](../protocol/http/openapi.json), [generate-http-api.cjs](../scripts/generate-http-api.cjs), [sync-game-api.cjs](../scripts/sync-game-api.cjs), [proto-tool.cjs](../scripts/proto-tool.cjs), [Deployment.cjs](../scripts/protocol-tool/Deployment.cjs).
 
 `.proto`가 메시지와 필드 번호·enum·oneof의 원본이고 OpenAPI가 HTTP 경로·operationId·미디어 타입·성공 outcome의 원본입니다. 현재 `/openapi.json`과 대화형 `/swagger/` 및 필요한 정적 자원을 제공합니다. [Swagger 가이드](swagger-api-guide.md)를 참고합니다. Protobuf를 쓰므로 gRPC 서비스가 자동 구성되는 것도 아닙니다.
 
@@ -288,7 +342,7 @@ npm.cmd run api:verify               # 현재 양쪽 코드 HTTP 왕복 검사
 
 ### 8.2 Docker 실행·원격 배포
 
-코드: {{S:Dockerfile}}, {{S:scripts/deploy-docker.cjs}}, {{S:scripts/docker-deploy/DockerDeployment.cjs}}, {{S:scripts/docker-deploy/DockerCli.cjs}}, {{S:scripts/docker-deploy/HealthMonitor.cjs}}.
+코드: [Dockerfile](../Dockerfile), [deploy-docker.cjs](../scripts/deploy-docker.cjs), [DockerDeployment.cjs](../scripts/docker-deploy/DockerDeployment.cjs), [DockerCli.cjs](../scripts/docker-deploy/DockerCli.cjs), [HealthMonitor.cjs](../scripts/docker-deploy/HealthMonitor.cjs).
 
 `DockerDeployment`가 절차를 소유하고 LocalDockerTarget/SshDockerTarget이 대상 연결을 바꿉니다. DockerCli는 프로세스 실행, HealthMonitor는 재시도 시간 예산을 담당합니다. **대상 선택 Strategy/Adapter와 절차 조정 분리**입니다.
 
@@ -335,4 +389,76 @@ Decorator·Object Pool·CQRS 프레임워크·Event Sourcing은 현재 적용 �
 
 아래 색인은 현재 소스에서 추출한 선언/메서드 이름입니다. 동작 해설은 상위 기능 절을 함께 읽으세요. 생성 메시지는 직접 편집하지 않습니다.
 
-<!-- SOURCE_INDEX -->
+| 소스 | 선언 |
+|---|---|
+| [src/common/csv/CsvDocument.ts](../src/common/csv/CsvDocument.ts) | `CsvRow`, `CsvDocument` |
+| [src/common/csv/CsvLoader.ts](../src/common/csv/CsvLoader.ts) | `ICsvTextSource`, `CsvLoader` |
+| [src/common/csv/CsvParseError.ts](../src/common/csv/CsvParseError.ts) | `CsvErrorCode`, `CsvParseError` |
+| [src/common/csv/CsvParser.ts](../src/common/csv/CsvParser.ts) | `FieldState`, `CsvParser` |
+| [src/common/IMillisecondClock.ts](../src/common/IMillisecondClock.ts) | `IMillisecondClock` |
+| [src/common/liveness/HeartbeatLease.ts](../src/common/liveness/HeartbeatLease.ts) | `HeartbeatLease` |
+| [src/common/logging/ILogSink.ts](../src/common/logging/ILogSink.ts) | `DiagnosticLogEntry`, `ILogSink` |
+| [src/common/MonotonicMillisecondClock.ts](../src/common/MonotonicMillisecondClock.ts) | `MonotonicMillisecondClock` |
+| [src/common/timing/IIntervalScheduler.ts](../src/common/timing/IIntervalScheduler.ts) | `IIntervalScheduler` |
+| [src/common/timing/PeriodicTask.ts](../src/common/timing/PeriodicTask.ts) | `PeriodicTask` |
+| [src/config/ServerConfig.ts](../src/config/ServerConfig.ts) | `ServerConfig` |
+| [src/contracts/SessionResults.ts](../src/contracts/SessionResults.ts) |  |
+| [src/controllers/http/HttpRequestLogContext.ts](../src/controllers/http/HttpRequestLogContext.ts) | `AccessLogParticipant`, `RequestLogDetails`, `HttpRequestLogContext` |
+| [src/controllers/http/ParticipantHttpHandler.ts](../src/controllers/http/ParticipantHttpHandler.ts) | `ParticipantHttpHandler` |
+| [src/controllers/http/ProtobufHttp.ts](../src/controllers/http/ProtobufHttp.ts) | `ProtobufRequestError`, `ProtobufHttp` |
+| [src/controllers/SessionController.ts](../src/controllers/SessionController.ts) | `SessionController` |
+| [src/data/ContentContract.ts](../src/data/ContentContract.ts) |  |
+| [src/data/CsvDataSet.ts](../src/data/CsvDataSet.ts) | `CsvDataSet` |
+| [src/data/CsvDataStore.ts](../src/data/CsvDataStore.ts) | `CsvDataStore` |
+| [src/data/CsvTableMapping.ts](../src/data/CsvTableMapping.ts) | `CsvTableMapping`, `CsvRowReader` |
+| [src/data/GameDataBundle.ts](../src/data/GameDataBundle.ts) | `GameDataBundle` |
+| [src/data/RoomExitRules.ts](../src/data/RoomExitRules.ts) |  |
+| [src/data/tables/AnchorData.ts](../src/data/tables/AnchorData.ts) | `AnchorData` |
+| [src/data/tables/AnchorInteractData.ts](../src/data/tables/AnchorInteractData.ts) | `AnchorInteractData` |
+| [src/data/tables/AnchorNonInteractData.ts](../src/data/tables/AnchorNonInteractData.ts) | `AnchorNonInteractData` |
+| [src/data/tables/ArrowData.ts](../src/data/tables/ArrowData.ts) | `ArrowData` |
+| [src/data/tables/CardData.ts](../src/data/tables/CardData.ts) | `CardData` |
+| [src/data/tables/CharacterStatData.ts](../src/data/tables/CharacterStatData.ts) | `CharacterStatData` |
+| [src/data/tables/ColorLetterData.ts](../src/data/tables/ColorLetterData.ts) | `ColorLetterData` |
+| [src/data/tables/ComponentData.ts](../src/data/tables/ComponentData.ts) | `ComponentData` |
+| [src/data/tables/ConsoleData.ts](../src/data/tables/ConsoleData.ts) | `ConsoleData` |
+| [src/data/tables/CsvGameData.ts](../src/data/tables/CsvGameData.ts) | `CsvGameData` |
+| [src/data/tables/FormulaData.ts](../src/data/tables/FormulaData.ts) | `FormulaData` |
+| [src/data/tables/FrameData.ts](../src/data/tables/FrameData.ts) | `FrameData` |
+| [src/data/tables/GameConfigData.ts](../src/data/tables/GameConfigData.ts) | `GameConfigData` |
+| [src/data/tables/LockData.ts](../src/data/tables/LockData.ts) | `LockData` |
+| [src/data/tables/PaperData.ts](../src/data/tables/PaperData.ts) | `PaperData` |
+| [src/data/tables/PrefabData.ts](../src/data/tables/PrefabData.ts) | `PrefabData` |
+| [src/data/tables/PuzzleData.ts](../src/data/tables/PuzzleData.ts) | `PuzzleData` |
+| [src/data/tables/PuzzleSlotData.ts](../src/data/tables/PuzzleSlotData.ts) | `PuzzleSlotData` |
+| [src/data/tables/RegistryData.ts](../src/data/tables/RegistryData.ts) | `RegistryData` |
+| [src/data/tables/RoomAData.ts](../src/data/tables/RoomAData.ts) | `RoomAData` |
+| [src/data/tables/RoomBData.ts](../src/data/tables/RoomBData.ts) | `RoomBData` |
+| [src/data/tables/RoomData.ts](../src/data/tables/RoomData.ts) | `RoomData` |
+| [src/data/tables/SoundData.ts](../src/data/tables/SoundData.ts) | `SoundData` |
+| [src/data/tables/SoundLinkData.ts](../src/data/tables/SoundLinkData.ts) | `SoundLinkData` |
+| [src/data/tables/TvData.ts](../src/data/tables/TvData.ts) | `TvData` |
+| [src/data/tables/WireData.ts](../src/data/tables/WireData.ts) | `WireData` |
+| [src/data/validation/CharacterStatRule.ts](../src/data/validation/CharacterStatRule.ts) | `CsvCharacterStatRule` |
+| [src/data/validation/ContentFeatureRule.ts](../src/data/validation/ContentFeatureRule.ts) | `ContentFeatureRule` |
+| [src/data/validation/CsvGameRules.ts](../src/data/validation/CsvGameRules.ts) | `CsvRoomRule`, `CsvPuzzleRule`, `CsvValueRelationRule` |
+| [src/data/validation/CsvSchema.ts](../src/data/validation/CsvSchema.ts) | `CsvColumnSchema`, `CsvReferenceSchema`, `CsvTableSchema` |
+| [src/data/validation/CsvTableRules.ts](../src/data/validation/CsvTableRules.ts) | `CsvSchemaRule`, `CsvReferenceRule` |
+| [src/data/validation/CsvValidation.ts](../src/data/validation/CsvValidation.ts) | `CsvValidationIssue`, `CsvValidationReport`, `ICsvValidationRule`, `CsvValidationTable`, `CsvValidationContext` |
+| [src/data/validation/CsvValidator.ts](../src/data/validation/CsvValidator.ts) | `CsvValidator` |
+| [src/data/validation/PrefabComponentRule.ts](../src/data/validation/PrefabComponentRule.ts) | `CsvPrefabComponentRule` |
+| [src/infrastructure/data/loadGameData.ts](../src/infrastructure/data/loadGameData.ts) |  |
+| [src/infrastructure/data/Utf8CsvFileSource.ts](../src/infrastructure/data/Utf8CsvFileSource.ts) | `Utf8CsvFileSource` |
+| [src/infrastructure/http/createSessionHttpServer.ts](../src/infrastructure/http/createSessionHttpServer.ts) |  |
+| [src/infrastructure/http/HttpAccessLogger.ts](../src/infrastructure/http/HttpAccessLogger.ts) | `HttpAccessLogEntry`, `HttpAccessLogger` |
+| [src/infrastructure/http/SwaggerUiHttpHandler.ts](../src/infrastructure/http/SwaggerUiHttpHandler.ts) | `SwaggerUiHttpHandler` |
+| [src/infrastructure/logging/ConsoleJsonLogSink.ts](../src/infrastructure/logging/ConsoleJsonLogSink.ts) | `ConsoleJsonLogSink` |
+| [src/infrastructure/timing/NodeIntervalScheduler.ts](../src/infrastructure/timing/NodeIntervalScheduler.ts) | `NodeIntervalScheduler` |
+| [src/main.ts](../src/main.ts) |  |
+| [src/models/GameSession.ts](../src/models/GameSession.ts) | `Player`, `SessionDefinition`, `SessionSnapshot`, `GameSession` |
+| [src/models/PuzzleAnswerRules.ts](../src/models/PuzzleAnswerRules.ts) | `IPuzzleAnswerRule`, `SlotAnswerRule`, `PuzzleAnswerRules` |
+| [src/models/RoomProgression.ts](../src/models/RoomProgression.ts) | `RoomProgression` |
+| [src/services/ParticipantRegistry.ts](../src/services/ParticipantRegistry.ts) | `ParticipantRecord`, `ParticipantRegistry` |
+| [src/services/SessionService.ts](../src/services/SessionService.ts) | `SessionService` |
+| [src/tools/readCsv.ts](../src/tools/readCsv.ts) |  |
+| [src/tools/validateCsv.ts](../src/tools/validateCsv.ts) |  |

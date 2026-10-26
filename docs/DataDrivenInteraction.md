@@ -1,5 +1,7 @@
 # 데이터 기반 상호작용: 첫 기능 단위
 
+> 문서 대조일: **2026-10-26**. 현재 코드·설정을 기준으로 설명을 점검했습니다. 본문의 과거 검사 수치·실행 기록은 해당 날짜의 결과입니다. [현재 상태·문서 검토 범위](문서_현행화_점검표.md)를 함께 확인합니다.
+
 이 문서는 첫 Closeup 단위의 기록입니다. 이후 추가된 입력 UI·API는 [정답 입력 연결 안내](AnswerApiConnection.md)를 따릅니다.
 
 ## 의도와 구현 범위
@@ -47,7 +49,7 @@ flowchart TD
 | Interaction/PlayerInteractionDriver.cs | 입력 명령과 상태/표현 모듈 조정. HTTP나 세션 토큰을 소유하지 않음 |
 | Interaction/CloseupPanelView.cs | 전용 uGUI 패널·돌아가기 이벤트·필요 시 EventSystem 수명 |
 | Interaction/CloseupPreview.cs | Mesh/Material만 표시용 복사. RenderTexture·카메라·Mesh 정리와 원래 카메라 마스크 복원 |
-| Interaction/InteractionUiFactory.cs | 후속 정답/문 UI도 재사용할 Rect/Text/Button 생성 모듈 |
+| Interaction/InteractionUiFactory.cs | 정답/클로즈업 UI가 재사용하는 Rect/Text/Button 생성 모듈 |
 | Resources/InteractionPresentation.asset | 공통 폰트·미리보기 레이어/해상도/FOV. 콘텐츠별 기능 선언과 표현 설정을 분리 |
 | Editor/InteractionChecks.cs | 데이터 기반 임시 대상 생성과 Unity 물리·표현 자원 검사 메뉴 |
 
@@ -67,7 +69,7 @@ UI 잠금은 소유 토큰으로 획득·해제합니다. 다른 UI와 중첩되
 
 `Tools/Game/데이터 기반 상호작용 검사`은 임시 씬에서 실제 Unity Collider·가림·강조 복원·RenderTexture·카메라 격리·표현 정리·공통 UI 잠금을 검사합니다. 씬과 원본 프리팹을 저장하지 않습니다.
 
-실제 마우스 입력 확인은 Join에서 로컬 A 입장 → `Tools/Game/클로즈업 테스트 대상 생성` → 게임 화면 커서 잡기 → 임시 큐브 좌클릭 → 패널 표시/이동·시점 중지 → 돌아가기 또는 Esc → 커서 재획득 → 이동/시점 복구 순서입니다. 정답 컨트롤은 아직 없으며 현재 R01 다이얼의 비활성 콘텐츠도 변경하지 않습니다. 사용자님이 이 기능 단위를 통과시키신 뒤 정답 UI/API 단위를 진행합니다.
+실제 마우스 입력 확인은 Join에서 로컬 A 입장 → `Tools/Game/클로즈업 테스트 대상 생성` → 게임 화면 커서 잡기 → 임시 큐브 좌클릭 → 패널 표시/이동·시점 중지 → 돌아가기 또는 Esc → 커서 재획득 → 이동/시점 복구 순서입니다. 정답 컨트롤과 문 서비스는 현재 연결되어 있습니다. 입력 UI·정답 제출·문 허가·다음 방 로드는 각 기능 가이드에 따라 추가 검사합니다.
 
 ## 데이터 이관의 범위
 

@@ -1,5 +1,7 @@
 # Protobuf 계약과 코드 생성
 
+> 문서 대조일: **2026-10-26**. 현재 코드·설정을 기준으로 설명을 점검했습니다. 본문의 과거 검사 수치·실행 기록은 해당 날짜의 결과입니다. [현재 상태·문서 검토 범위](../docs/문서_현행화_점검표.md)를 함께 확인합니다.
+
 현재 게임 HTTP API는 Google Protobuf 바이너리이며 Unity에는 생성 코드와 Google.Protobuf 런타임이 구성되어 있습니다. 운영 확인 /health와 계약 /openapi.json은 JSON입니다. 최신 코드·검사·자동 생성 배포는 [문·정답 API 안내](../docs/room-api-and-protobuf.md)를 참고합니다.
 
 ## 계약의 기준
@@ -54,14 +56,14 @@ Linux x64/arm64의 도구 선택도 구성했지만 실제 Linux 실행은 아�
 
 ## 출력과 검증
 
-- TypeScript: src/generated/escape/v1/common.ts, session.ts
-- C#: protocol/generated/csharp/Common.cs, Session.cs
+- TypeScript: src/generated/escape/v1/common.ts, session.ts, game_api.ts
+- C#: protocol/generated/csharp/Common.cs, Session.cs, GameApi.cs
 - 교차 검증: protocol/verification/csharp의 별도 콘솔 프로그램
 - 다운로드·임시 바이너리: .protocol-tools/ (Git 제외)
 
 검증은 TS → C# → TS 및 C# → TS의 메시지 의미를 비교합니다.
 성공/실패, 배열, enum, true/false, 미지정 oneof, 0값, 미지 enum, oneof 최종 분기,
-잘린 메시지 거부를 확인합니다. HTTP 통신·실제 Unity 실행·IL2CPP 검증은 다음 단계입니다.
+잘린 메시지 거부를 확인합니다. 현재 실제 C#↔Node HTTP 검사는 별도 api:verify 도구로 연결되어 있습니다. 이 메시지 검사만으로 실제 Unity·IL2CPP 실행을 검증하지 않습니다.
 
 Windows Unity 설치의 .NET Standard 2.1 참조 환경에서 추가 컴파일:
 
@@ -76,4 +78,4 @@ Google.Protobuf의 .NET Standard 2.0을 Unity 2.1 참조에 연결하므로 CS17
 
 서버·Unity 생성 코드 배포 도구의 경로 설정과 실행은 TOOL.md에 있습니다.
 
-게임 API 전환과 생성 배포를 완료했습니다. 다음 단계는 1인칭 플레이어와 CSV 기반 문·정답 입력 UI를 공개 게임 계약에 연결하고 실제 Unity Play/빌드를 확인하는 것입니다.
+게임 API·플레이어·문·정답 입력은 현재 연결되어 있습니다. 계약 변경 후 생성·HTTP 교차 검사·클라이언트 기능 연결을 확인하고 서버 배포와 클라이언트 빌드를 별도로 진행합니다. 현재 문서 점검과 과거 실기 검사 기록을 구분합니다.
